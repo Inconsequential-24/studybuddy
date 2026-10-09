@@ -2,6 +2,8 @@
 
 An accessible personal teaching assistant that teaches, practises and examines students using only the PDFs in their selected classroom. Answers are grounded in the uploaded documents, with verified citations back to the original pages.
 
+**Live site:** [juhidwivedi.online](https://juhidwivedi.online), hosted and deployed on [Replit](https://replit.com).
+
 ## Features
 
 - Private classrooms built from your own PDFs (up to 25 MB and 100 pages each)
