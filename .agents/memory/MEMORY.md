@@ -1,0 +1,6 @@
+- [Visual citation grounding](visual-citations.md) — distinguish figure/table source IDs from document IDs explicitly in model prompts.
+- [Bundled workspace dependencies](bundled-dependencies.md) — externalized SDKs must resolve from the deployed artifact, not only their shared library.
+- [PDF browser compatibility](pdf-browser-compatibility.md) — server PDF rendering does not prove browser compatibility; native embeds can also be blank.
+- [Learning generation concurrency](learning-generation-concurrency.md) — overlapping AI requests must return canonical persisted results and preserve newer state.
+- [PDF ingestion durability](pdf-ingestion-durability.md) — retries preserve verified evidence; cancellation precedes cleanup; in-flight external billing cannot be exactly-once.
+- [Signed-in browser testing](signed-in-browser-testing.md) — runner Clerk claims overrides are context-bound; exported cookies alone do not reproduce them.

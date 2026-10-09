@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "types": ["node"]
+  },
+  "include": [
+    "playwright.retry.config.ts",
+    "tests/browser/**/*.ts",
+    "tests/retry-browser-fixtures.ts"
+  ]
+}

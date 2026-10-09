@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "StudyBuddy"
+description = "An accessible study assistant that helps students master their own classroom PDFs through personalized teaching, active practice, adaptive exams, and grounded progress insights."
+version = "1.0.0"
+id = "artifacts/grounded-tutor"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18671
+
+[services.development]
+run = "pnpm --filter @workspace/grounded-tutor run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/grounded-tutor", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/grounded-tutor/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18671"
+BASE_PATH = "/"

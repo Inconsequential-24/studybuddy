@@ -1,0 +1,802 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API for the PDF-grounded student tutor
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: profile
+    description: Student learning preferences
+  - name: classrooms
+    description: Isolated PDF classrooms and their learning activities
+  - name: storage
+    description: Private PDF uploads
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get the signed-in student's profile
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Save the student's learning preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+  /classrooms:
+    get:
+      operationId: listClassrooms
+      tags: [classrooms]
+      summary: List the signed-in student's classrooms
+      responses:
+        "200":
+          description: Classrooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClassroomSummary"
+    post:
+      operationId: createClassroom
+      tags: [classrooms]
+      summary: Create a classroom from uploaded PDFs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassroomInput"
+      responses:
+        "201":
+          description: Created classroom and ingestion coverage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassroomDetail"
+  /classrooms/{classroomId}:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getClassroom
+      tags: [classrooms]
+      summary: Get a classroom and its source coverage
+      responses:
+        "200":
+          description: Classroom details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassroomDetail"
+    delete:
+      operationId: deleteClassroom
+      tags: [classrooms]
+      summary: Delete a classroom and its learning data
+      responses:
+        "200":
+          description: Deletion status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationStatus"
+  /classrooms/{classroomId}/verify-pages:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: verifyClassroomPages
+      tags: [classrooms]
+      summary: Verify already captured source pages
+      responses:
+        "200":
+          description: Updated classroom
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassroomDetail" }
+  /classrooms/{classroomId}/retry-failed-pages:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: retryFailedPages
+      tags: [classrooms]
+      summary: Recheck up to three flagged pages using already captured source evidence
+      responses:
+        "200":
+          description: Classroom with updated verified coverage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassroomDetail"
+  /classrooms/{classroomId}/plan:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getClassroomPlan
+      tags: [classrooms]
+      summary: Get the personalized ordered teaching plan
+      responses:
+        "200":
+          description: Teaching plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeachingPlan"
+  /classrooms/{classroomId}/dashboard:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getClassroomDashboard
+      tags: [classrooms]
+      summary: Get mastery, radar dimensions, and reviews due
+      responses:
+        "200":
+          description: Classroom progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardReport"
+  /classrooms/{classroomId}/questions:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: askClassroomQuestion
+      tags: [classrooms]
+      summary: Ask a question grounded only in this classroom's PDFs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassroomQuestionInput"
+      responses:
+        "200":
+          description: Grounded answer or explicit abstention
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TutorAnswer"
+  /classrooms/{classroomId}/lessons/{conceptId}:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: conceptId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getLesson
+      tags: [classrooms]
+      summary: Get a personalized concept lesson with page citations
+      responses:
+        "200":
+          description: Concept lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+  /classrooms/{classroomId}/lessons/{conceptId}/diagnostic:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: conceptId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: submitDiagnostic
+      tags: [classrooms]
+      summary: Adapt the lesson to the student's diagnostic answers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DiagnosticInput" }
+      responses:
+        "200":
+          description: Adapted lesson
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lesson" }
+  /classrooms/{classroomId}/lessons/{conceptId}/explain-back:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: conceptId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: submitExplainBack
+      tags: [classrooms]
+      summary: Grade a student's explain-it-back response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExplainBackInput"
+      responses:
+        "200":
+          description: Feedback and next action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExplainBackFeedback"
+  /classrooms/{classroomId}/practice:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getPracticePack
+      tags: [classrooms]
+      summary: Get the next recall, quiz, figure, or application activity
+      responses:
+        "200":
+          description: Practice activities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PracticePack"
+  /classrooms/{classroomId}/attempts:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: submitPracticeAttempt
+      tags: [classrooms]
+      summary: Grade practice and record the attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PracticeAttemptInput"
+      responses:
+        "201":
+          description: Grading feedback and persisted attempt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttemptResult"
+  /classrooms/{classroomId}/exam/start:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: startExam
+      tags: [classrooms]
+      summary: Start an adaptive exam after student readiness
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamReadyInput"
+      responses:
+        "201":
+          description: Adaptive exam session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamSession"
+  /classrooms/{classroomId}/exam/{examId}/answers:
+    parameters:
+      - name: classroomId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: examId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: submitExamAnswer
+      tags: [classrooms]
+      summary: Submit one answer to the adaptive exam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamAnswerInput"
+      responses:
+        "200":
+          description: Next question or completed results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamAnswerResult"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a private PDF upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlInput"
+      responses:
+        "200":
+          description: Signed upload URL and object path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrl"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    StudentProfile:
+      type: object
+      required: [id, gradeLevel, goal, explanationStyle, pace, sessionMinutes, vocabularySupport, accessibilityNeeds, confidence, interests, completed]
+      properties:
+        id: { type: string }
+        gradeLevel: { type: string }
+        goal: { type: string }
+        explanationStyle: { type: string, enum: [step-by-step, examples, visual-first, short-bullets] }
+        pace: { type: string, enum: [gentle, steady, fast] }
+        sessionMinutes: { type: integer }
+        vocabularySupport: { type: boolean }
+        accessibilityNeeds: { type: string }
+        confidence: { type: string, enum: [starting-out, building, confident] }
+        interests: { type: string }
+        completed: { type: boolean }
+    ProfileInput:
+      type: object
+      required: [gradeLevel, goal, explanationStyle, pace, sessionMinutes, vocabularySupport, accessibilityNeeds, confidence, interests]
+      properties:
+        gradeLevel: { type: string, minLength: 1 }
+        goal: { type: string, minLength: 1 }
+        explanationStyle: { type: string, enum: [step-by-step, examples, visual-first, short-bullets] }
+        pace: { type: string, enum: [gentle, steady, fast] }
+        sessionMinutes: { type: integer, minimum: 5, maximum: 90 }
+        vocabularySupport: { type: boolean }
+        accessibilityNeeds: { type: string }
+        confidence: { type: string, enum: [starting-out, building, confident] }
+        interests: { type: string }
+    ClassroomSummary:
+      type: object
+      required: [id, name, subject, status, pageCount, figureCount, tableCount, conceptCount, coveragePercent, reviewDueCount, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        subject: { type: string }
+        status: { type: string, enum: [processing, ready, needs-attention] }
+        pageCount: { type: integer }
+        figureCount: { type: integer }
+        tableCount: { type: integer }
+        conceptCount: { type: integer }
+        coveragePercent: { type: integer }
+        reviewDueCount: { type: integer }
+        updatedAt: { type: string, format: date-time }
+    UploadedDocumentInput:
+      type: object
+      required: [name, objectPath, size]
+      properties:
+        name: { type: string }
+        objectPath: { type: string }
+        size: { type: integer, minimum: 1, maximum: 26214400 }
+    ClassroomInput:
+      type: object
+      required: [name, documents]
+      properties:
+        name: { type: string, minLength: 1 }
+        subject: { type: string }
+        documents:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/UploadedDocumentInput" }
+    SourceReference:
+      type: object
+      required: [page, quote, kind]
+      properties:
+        page: { type: integer }
+        quote: { type: string }
+        kind: { type: string, enum: [text, figure, table] }
+        sourceId: { type: string }
+        label: { type: string }
+    ConceptSummary:
+      type: object
+      required: [id, title, summary, pageRefs, mastery, estimatedMinutes, reviewDue]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        pageRefs:
+          type: array
+          items: { type: integer }
+        mastery: { type: integer, minimum: 0, maximum: 100 }
+        estimatedMinutes: { type: integer }
+        reviewDue: { type: boolean }
+    PageFailure:
+      type: object
+      required: [page, code, message, attempts]
+      properties:
+        page: { type: integer }
+        code: { type: string }
+        message: { type: string }
+        attempts: { type: integer }
+        maxAttempts: { type: integer }
+        retryable: { type: boolean }
+        nextAttemptAt: { type: string, format: date-time }
+    CoverageReport:
+      type: object
+      required: [pages, mappedPages, figures, tables, concepts, flaggedPages]
+      properties:
+        pages: { type: integer }
+        mappedPages: { type: integer }
+        figures: { type: integer }
+        tables: { type: integer }
+        concepts: { type: integer }
+        pendingPages: { type: integer }
+        processingPages: { type: integer }
+        failedPages: { type: integer }
+        failures:
+          type: array
+          items: { $ref: "#/components/schemas/PageFailure" }
+        flaggedPages:
+          type: array
+          items: { type: integer }
+    ClassroomDetail:
+      type: object
+      required: [id, name, subject, status, documents, concepts, coverage, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        subject: { type: string }
+        status: { type: string, enum: [processing, ready, needs-attention] }
+        documents:
+          type: array
+          items:
+            type: object
+            required: [id, name, pageCount, objectPath]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              pageCount: { type: integer }
+              objectPath: { type: string }
+        concepts:
+          type: array
+          items: { $ref: "#/components/schemas/ConceptSummary" }
+        coverage: { $ref: "#/components/schemas/CoverageReport" }
+        sourcePages:
+          type: array
+          items: { $ref: "#/components/schemas/AccessibleSourcePage" }
+        updatedAt: { type: string, format: date-time }
+    AccessibleSourcePage:
+      type: object
+      required: [page, text, figures, tables]
+      properties:
+        page: { type: integer }
+        text: { type: string }
+        figures:
+          type: array
+          items:
+            type: object
+            required: [id, caption, description, labels, relationships]
+            properties:
+              id: { type: string }
+              caption: { type: string }
+              description: { type: string }
+              labels:
+                type: array
+                items: { type: string }
+              relationships:
+                type: array
+                items: { type: string }
+        tables:
+          type: array
+          items:
+            type: object
+            required: [id, caption, rows]
+            properties:
+              id: { type: string }
+              caption: { type: string }
+              rows:
+                type: array
+                items:
+                  type: array
+                  items: { type: string }
+    TeachingPlan:
+      type: object
+      required: [classroomId, estimatedMinutes, concepts]
+      properties:
+        classroomId: { type: string }
+        estimatedMinutes: { type: integer }
+        concepts:
+          type: array
+          items: { $ref: "#/components/schemas/ConceptSummary" }
+    DashboardReport:
+      type: object
+      required: [dimensions, concepts, reviewDue, recentAttempts, recommendation]
+      properties:
+        dimensions:
+          type: array
+          items:
+            type: object
+            required: [name, score]
+            properties:
+              name: { type: string, enum: [Recognition, Recall, Explanation, Connections, Application, Retention] }
+              score: { type: integer, minimum: 0, maximum: 100 }
+        concepts:
+          type: array
+          items: { $ref: "#/components/schemas/ConceptSummary" }
+        reviewDue:
+          type: array
+          items: { $ref: "#/components/schemas/ConceptSummary" }
+        recentAttempts:
+          type: array
+          items:
+            type: object
+            required: [activity, concept, score, createdAt]
+            properties:
+              activity: { type: string }
+              concept: { type: string }
+              score: { type: integer }
+              createdAt: { type: string, format: date-time }
+        recommendation: { type: string }
+    TutorAnswer:
+      type: object
+      required: [answer, abstained, citations]
+      properties:
+        answer: { type: string }
+        abstained: { type: boolean }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/SourceReference" }
+    ClassroomQuestionInput:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string, minLength: 1 }
+    Lesson:
+      type: object
+      required: [concept, diagnosticQuestions, explanation, citations, figurePages, nextAction]
+      properties:
+        concept: { $ref: "#/components/schemas/ConceptSummary" }
+        diagnosticQuestions:
+          type: array
+          items: { type: string }
+        explanation: { type: string }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/SourceReference" }
+        figurePages:
+          type: array
+          items: { type: integer }
+        nextAction: { type: string, enum: [continue, re-explain, revisit] }
+    ExplainBackInput:
+      type: object
+      required: [response]
+      properties:
+        response: { type: string, minLength: 1 }
+    DiagnosticInput:
+      type: object
+      required: [responses]
+      properties:
+        responses:
+          type: array
+          minItems: 2
+          maxItems: 3
+          items: { type: string, minLength: 1 }
+    ExplainBackFeedback:
+      type: object
+      required: [feedback, score, missingPoints, nextAction, citations]
+      properties:
+        feedback: { type: string }
+        reExplanation: { type: string }
+        score: { type: integer, minimum: 0, maximum: 100 }
+        missingPoints:
+          type: array
+          items: { type: string }
+        nextAction: { type: string, enum: [continue, re-explain, revisit] }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/SourceReference" }
+    PracticePack:
+      type: object
+      required: [activities, questions]
+      properties:
+        activities:
+          type: array
+          items: { type: string, enum: [free-recall, quick-quiz, figure-labels, apply-it] }
+        questions:
+          type: array
+          items:
+            type: object
+            required: [id, conceptId, type, prompt, options, citations]
+            properties:
+              id: { type: string }
+              conceptId: { type: string }
+              type: { type: string, enum: [free-recall, multiple-choice, short-answer, figure-labels, apply-it] }
+              prompt: { type: string }
+              options:
+                type: array
+                items: { type: string }
+              citations:
+                type: array
+                items: { $ref: "#/components/schemas/SourceReference" }
+              figurePage: { type: ["integer", "null"] }
+    PracticeAttemptInput:
+      type: object
+      required: [questionId, conceptId, activity, response, elapsedSeconds, hintsUsed, assisted]
+      properties:
+        questionId: { type: string }
+        conceptId: { type: string }
+        activity: { type: string, enum: [free-recall, quick-quiz, figure-labels, apply-it] }
+        response: { type: string }
+        elapsedSeconds: { type: integer, minimum: 0 }
+        hintsUsed: { type: integer, minimum: 0 }
+        assisted: { type: boolean }
+    AttemptResult:
+      type: object
+      required: [score, correctPoints, missingPoints, incorrectPoints, feedback, attemptId, citations]
+      properties:
+        score: { type: integer, minimum: 0, maximum: 100 }
+        correctPoints:
+          type: array
+          items: { type: string }
+        missingPoints:
+          type: array
+          items: { type: string }
+        incorrectPoints:
+          type: array
+          items: { type: string }
+        feedback: { type: string }
+        attemptId: { type: string }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/SourceReference" }
+    ExamReadyInput:
+      type: object
+      required: [ready]
+      properties:
+        ready: { type: boolean, enum: [true] }
+    ExamQuestion:
+      type: object
+      required: [id, conceptId, difficulty, prompt, options, citations]
+      properties:
+        id: { type: string }
+        conceptId: { type: string }
+        difficulty: { type: integer, minimum: 1, maximum: 3 }
+        prompt: { type: string }
+        options:
+          type: array
+          items: { type: string }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/SourceReference" }
+    ExamSession:
+      type: object
+      required: [id, currentQuestion, questionNumber, totalQuestions, complete]
+      properties:
+        id: { type: string }
+        currentQuestion: { $ref: "#/components/schemas/ExamQuestion" }
+        questionNumber: { type: integer }
+        totalQuestions: { type: integer }
+        complete: { type: boolean }
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/ConceptSummary" }
+    ExamAnswerInput:
+      type: object
+      required: [questionId, response]
+      properties:
+        questionId: { type: string }
+        response: { type: string }
+    ExamAnswerResult:
+      type: object
+      required: [feedback, score, nextQuestion, complete, results]
+      properties:
+        feedback: { type: string }
+        score: { type: integer, minimum: 0, maximum: 100 }
+        nextQuestion: { $ref: "#/components/schemas/ExamQuestion" }
+        complete: { type: boolean }
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/ConceptSummary" }
+    MutationStatus:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+    UploadUrlInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string }
+        size: { type: integer, minimum: 1, maximum: 26214400 }
+        contentType: { type: string, enum: [application/pdf] }
+    UploadUrl:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }
+
