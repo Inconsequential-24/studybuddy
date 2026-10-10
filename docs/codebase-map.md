@@ -72,10 +72,6 @@ Endpoints in `routes/tutor.ts` (spec: [openapi.yaml](../lib/api-spec/openapi.yam
 | [vite.config.ts](../artifacts/grounded-tutor/vite.config.ts) | Requires `PORT` and `BASE_PATH`; `@` alias to `src`; Replit plugins only when `REPL_ID` is set; optional `/api` proxy via `API_PROXY_TARGET` ([L75-77](../artifacts/grounded-tutor/vite.config.ts#L75-L77)). |
 | [public/](../artifacts/grounded-tutor/public) | favicon, logo, robots.txt. |
 
-## 4. artifacts/mockup-sandbox
-
-Replit's design-canvas helper (own Vite app, `mockupPreviewPlugin.ts`, generated `src/.generated/mockup-components.ts`). Not needed to run StudyBuddy; safe to ignore or delete.
-
 ## 5. lib/*
 
 | Package | Purpose |
@@ -130,7 +126,7 @@ Tables in [lib/db/src/schema/tutor.ts](../lib/db/src/schema/tutor.ts) (most stor
 - **Clerk via Replit**: Replit-managed keys and the Clerk proxy path; locally you need your own Clerk app (`.env.example` says so).
 - **App Storage**: [objectStorage.ts:13](../artifacts/api-server/src/lib/objectStorage.ts#L13) hardcodes the sidecar `http://127.0.0.1:1106` for credentials ([L19-22](../artifacts/api-server/src/lib/objectStorage.ts#L19-L22)) and signed URLs ([L253](../artifacts/api-server/src/lib/objectStorage.ts#L253)). Locally, set `STORAGE_DRIVER=local` to use the disk-backed driver instead (see `docs/plans/local-pdf-storage.md`).
 - **Gemini via Replit AI Integrations**: env names are `AI_INTEGRATIONS_*`; `.env.example` points them at the public Google endpoint instead.
-- Root dependency `@replit/connectors-sdk`, Replit Vite plugins (catalog), `.replit-artifact/artifact.toml` files, `scripts/post-merge.sh`.
+- Replit Vite plugins (catalog), `.replit-artifact/artifact.toml` files, `scripts/post-merge.sh`.
 
 ## 9. Replit leftovers
 

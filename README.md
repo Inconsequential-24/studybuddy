@@ -97,7 +97,6 @@ This pushes the database schema, starts the API on port 8080 and the web app on 
 artifacts/
   api-server/       Express API, PDF ingestion and tutoring logic
   grounded-tutor/   React web app
-  mockup-sandbox/   Replit design sandbox (not needed to run the app)
 lib/
   api-spec/         OpenAPI source of truth
   api-zod/          Generated Zod schemas
