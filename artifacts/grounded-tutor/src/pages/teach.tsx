@@ -2,17 +2,19 @@ import { useRef, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2 } from 'lucide-react';
-import { getGetClassroomDashboardQueryKey, getGetClassroomPlanQueryKey, getGetLessonQueryKey, useGetClassroomPlan, useGetLesson, useSubmitDiagnostic, useSubmitExplainBack, type ConceptSummary } from '@workspace/api-client-react';
+import { getGetClassroomDashboardQueryKey, getGetClassroomPlanQueryKey, getGetLessonQueryKey, useGetClassroomPlan, useGetLesson, useGetProfile, useSubmitDiagnostic, useSubmitExplainBack, type ConceptSummary } from '@workspace/api-client-react';
 import { AppShell } from '@/components/shell';
 import { Citations, EmptyBlock, ErrorBlock, LoadingBlock, MasteryBar, PageButton, PageHeader, Panel } from '@/components/bits';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { ReadAloud } from '@/components/read-aloud';
 
 const nextCopy = { continue: 'You have it. Move to the next concept.', 're-explain': 'Read the lesson again with the missing points in mind, then explain once more.', revisit: 'Revisit the cited pages first, then come back and try again.' } as const;
 
 function LessonView({ id, concept, next, onNext }: { id: string; concept: ConceptSummary; next?: ConceptSummary; onNext: (c: string) => void }) {
   const qc = useQueryClient();
+  const profile = useGetProfile();
   const lq = useGetLesson(id, concept.id, { query: { queryKey: getGetLessonQueryKey(id, concept.id) } });
   const eb = useSubmitExplainBack();
   const diag = useSubmitDiagnostic();
@@ -61,7 +63,7 @@ function LessonView({ id, concept, next, onNext }: { id: string; concept: Concep
       <Panel>
         <h2 className="text-2xl font-semibold">{l.concept.title}</h2>
         <p className="mb-4 text-muted-foreground">About {l.concept.estimatedMinutes} minutes. Pages {l.concept.pageRefs.join(', ')}.</p>
-        <div className="space-y-4 text-lg leading-relaxed">{l.explanation.split(/\n{2,}/).map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}</div>
+        <ReadAloud text={l.explanation} language={profile.data?.learningLanguage ?? 'en-US'} />
         {l.figurePages.length > 0 && (
           <div className="mt-5"><h3 className="mb-2 font-bold">Figures and tables in your PDF</h3>
             <div className="flex flex-wrap gap-2">{l.figurePages.map((p) => <PageButton key={p} classroomId={id} page={p} label={'Open page ' + p} />)}</div></div>

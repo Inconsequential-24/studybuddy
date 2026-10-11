@@ -12,10 +12,14 @@ tags:
     description: Health operations
   - name: profile
     description: Student learning preferences
+  - name: speech
+    description: Accessible speech input and text-to-speech playback
   - name: classrooms
     description: Isolated PDF classrooms and their learning activities
   - name: storage
     description: Private PDF uploads
+  - name: source-checks
+    description: Optional, one-time independent checks of uploaded PDFs
 paths:
   /healthz:
     get:
@@ -59,6 +63,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StudentProfile"
+  /speech/synthesize:
+    post:
+      operationId: synthesizeSpeech
+      tags: [speech]
+      summary: Synthesize spoken learning content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpeechInput"
+      responses:
+        "200":
+          description: MP3 audio encoded as base64
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeechAudio"
+        "400":
+          description: Invalid speech request
+        "503":
+          description: Speech service is not configured or available
+  /speech/transcribe:
+    post:
+      operationId: transcribeSpeech
+      tags: [speech]
+      summary: Transcribe a student's recorded question
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Transcribed speech
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeechTranscription"
+        "400":
+          description: Audio is missing or not supported
+        "503":
+          description: Speech transcription is not configured or available
   /classrooms:
     get:
       operationId: listClassrooms
@@ -403,6 +452,98 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UploadUrl"
+  /source-checks:
+    get:
+      operationId: listSourceChecks
+      tags: [source-checks]
+      summary: List the signed-in student's recent PDF source checks
+      responses:
+        "200":
+          description: Recent source-check PDFs and their status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceCheckHistory"
+  /pdf-activity:
+    get:
+      operationId: listPdfActivity
+      tags: [source-checks]
+      summary: List the signed-in student's classroom PDFs and unexpired source checks
+      responses:
+        "200":
+          description: Recent classroom PDFs and unexpired source-check PDFs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PdfActivityHistory"
+  /source-checks/uploads:
+    post:
+      operationId: requestSourceCheckUpload
+      tags: [source-checks]
+      summary: Request an isolated private upload for an optional source check
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceCheckUploadInput"
+      responses:
+        "201":
+          description: Signed upload URL and source check ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceCheckUpload"
+  /source-checks/{checkId}/start:
+    post:
+      operationId: startSourceCheck
+      tags: [source-checks]
+      summary: Explicitly start the requested PDF source check
+      parameters:
+        - name: checkId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "202":
+          description: Check queued or already processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceCheckStatus"
+  /source-checks/{checkId}:
+    get:
+      operationId: getSourceCheck
+      tags: [source-checks]
+      summary: Get the processing state or result of a source check
+      parameters:
+        - name: checkId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Source check state and report when complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceCheckStatus"
+    delete:
+      operationId: deleteSourceCheck
+      tags: [source-checks]
+      summary: Delete a source check and its report
+      parameters:
+        - name: checkId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Source check deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationStatus"
 components:
   schemas:
     HealthStatus:
@@ -414,7 +555,7 @@ components:
         - status
     StudentProfile:
       type: object
-      required: [id, gradeLevel, goal, explanationStyle, pace, sessionMinutes, vocabularySupport, accessibilityNeeds, confidence, interests, completed]
+      required: [id, gradeLevel, goal, explanationStyle, pace, sessionMinutes, vocabularySupport, accessibilityNeeds, confidence, interests, learningLanguage, interestTerminology, completed]
       properties:
         id: { type: string }
         gradeLevel: { type: string }
@@ -426,10 +567,12 @@ components:
         accessibilityNeeds: { type: string }
         confidence: { type: string, enum: [starting-out, building, confident] }
         interests: { type: string }
+        learningLanguage: { type: string, enum: [en-US, hi-IN, bn-IN, es-ES, fr-FR, de-DE, pt-BR, ja-JP, ar-XA] }
+        interestTerminology: { type: boolean }
         completed: { type: boolean }
     ProfileInput:
       type: object
-      required: [gradeLevel, goal, explanationStyle, pace, sessionMinutes, vocabularySupport, accessibilityNeeds, confidence, interests]
+      required: [gradeLevel, goal, explanationStyle, pace, sessionMinutes, vocabularySupport, accessibilityNeeds, confidence, interests, learningLanguage, interestTerminology]
       properties:
         gradeLevel: { type: string, minLength: 1 }
         goal: { type: string, minLength: 1 }
@@ -440,6 +583,25 @@ components:
         accessibilityNeeds: { type: string }
         confidence: { type: string, enum: [starting-out, building, confident] }
         interests: { type: string }
+        learningLanguage: { type: string, enum: [en-US, hi-IN, bn-IN, es-ES, fr-FR, de-DE, pt-BR, ja-JP, ar-XA] }
+        interestTerminology: { type: boolean }
+    SpeechInput:
+      type: object
+      required: [text, language]
+      properties:
+        text: { type: string, minLength: 1, maxLength: 4500 }
+        language: { type: string, enum: [en-US, hi-IN, bn-IN, es-ES, fr-FR, de-DE, pt-BR, ja-JP, ar-XA] }
+    SpeechAudio:
+      type: object
+      required: [audioContent, audioMimeType]
+      properties:
+        audioContent: { type: string, description: Base64-encoded audio returned by the Meta MMS endpoint }
+        audioMimeType: { type: string, enum: [audio/wav, audio/mpeg] }
+    SpeechTranscription:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string, description: Transcribed spoken words }
     ClassroomSummary:
       type: object
       required: [id, name, subject, status, pageCount, figureCount, tableCount, conceptCount, coveragePercent, reviewDueCount, updatedAt]
@@ -541,6 +703,9 @@ components:
               name: { type: string }
               pageCount: { type: integer }
               objectPath: { type: string }
+              currentStages:
+                type: array
+                items: { $ref: "#/components/schemas/ClassroomReviewStage" }
         concepts:
           type: array
           items: { $ref: "#/components/schemas/ConceptSummary" }
@@ -799,4 +964,130 @@ components:
       properties:
         uploadURL: { type: string, format: uri }
         objectPath: { type: string }
-
+    SourceCheckUploadInput:
+      type: object
+      required: [name, size, mode]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 26214400 }
+        mode: { type: string, enum: [skim, thorough] }
+    SourceCheckUpload:
+      type: object
+      required: [id, uploadURL, objectPath]
+      properties:
+        id: { type: string }
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }
+    SourceCheckHistory:
+      type: object
+      required: [items, totalCount]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SourceCheckHistoryItem" }
+        totalCount: { type: integer, minimum: 0 }
+    SourceCheckHistoryItem:
+      type: object
+      required: [id, fileName, mode, status, stage, failure, createdAt, expiresAt]
+      properties:
+        id: { type: string }
+        fileName: { type: string }
+        mode: { type: string, enum: [skim, thorough] }
+        status: { type: string, enum: [uploading, processing, complete, failed] }
+        stage:
+          oneOf:
+            - { $ref: "#/components/schemas/SourceCheckStage" }
+            - { type: "null" }
+        failure: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    PdfActivityHistory:
+      type: object
+      required: [items, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/PdfActivitySourceCheck"
+              - $ref: "#/components/schemas/PdfActivityClassroomPdf"
+        totalCount: { type: integer, minimum: 0 }
+    PdfActivitySourceCheck:
+      type: object
+      required: [kind, id, fileName, mode, status, stage, failure, createdAt, expiresAt]
+      properties:
+        kind: { type: string, enum: [source-check] }
+        id: { type: string }
+        fileName: { type: string }
+        mode: { type: string, enum: [skim, thorough] }
+        status: { type: string, enum: [uploading, processing, complete, failed] }
+        stage:
+          oneOf:
+            - { $ref: "#/components/schemas/SourceCheckStage" }
+            - { type: "null" }
+        failure: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    PdfActivityClassroomPdf:
+      type: object
+      required: [kind, id, classroomId, classroomName, fileName, status, currentStages, createdAt]
+      properties:
+        kind: { type: string, enum: [classroom-pdf] }
+        id: { type: string }
+        classroomId: { type: string }
+        classroomName: { type: string }
+        fileName: { type: string }
+        status: { type: string, enum: [processing, ready, needs-attention] }
+        currentStages:
+          type: array
+          items: { $ref: "#/components/schemas/ClassroomReviewStage" }
+        createdAt: { type: string, format: date-time }
+    SourceCheckStatus:
+      type: object
+      required: [id, mode, status, stage, report, failure, expiresAt]
+      properties:
+        id: { type: string }
+        mode: { type: string, enum: [skim, thorough] }
+        status: { type: string, enum: [uploading, processing, complete, failed] }
+        stage:
+          oneOf:
+            - { $ref: "#/components/schemas/SourceCheckStage" }
+            - { type: "null" }
+        report:
+          oneOf:
+            - { $ref: "#/components/schemas/SourceCheckReport" }
+            - { type: "null" }
+        failure: { type: ["string", "null"] }
+        expiresAt: { type: string, format: date-time }
+    SourceCheckStage:
+      type: string
+      enum: [validating-pdf, extracting-text, rendering-pages, comparing-claims, validating-findings]
+    ClassroomReviewStage:
+      type: string
+      enum: [extracting-text, rendering-page, mapping-page, checking-citations]
+    SourceCheckReport:
+      type: object
+      required: [mode, limitations, reviewedPages, totalPages, findings, uncheckedClaims]
+      properties:
+        mode: { type: string, enum: [skim, thorough] }
+        limitations: { type: string }
+        reviewedPages: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+        findings:
+          type: array
+          items: { $ref: "#/components/schemas/SourceCheckFinding" }
+        uncheckedClaims:
+          type: array
+          items: { type: string }
+    SourceCheckFinding:
+      type: object
+      required: [page, evidenceKind, pdfQuote, status, explanation, sourceName, sourceUrl]
+      properties:
+        page: { type: integer, minimum: 1 }
+        evidenceKind: { type: string, enum: [text, figure, table] }
+        sourceId: { type: ["string", "null"] }
+        pdfQuote: { type: string }
+        status: { type: string, enum: [confirmed-conflict, possible-conflict] }
+        explanation: { type: string }
+        sourceName: { type: string }
+        sourceUrl: { type: string, format: uri }

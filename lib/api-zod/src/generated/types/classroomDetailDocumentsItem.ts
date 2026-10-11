@@ -5,10 +5,12 @@
  * API for the PDF-grounded student tutor
  * OpenAPI spec version: 0.1.0
  */
+import type { ClassroomReviewStage } from './classroomReviewStage';
 
 export type ClassroomDetailDocumentsItem = {
   id: string;
   name: string;
   pageCount: number;
   objectPath: string;
+  currentStages?: ClassroomReviewStage[];
 };

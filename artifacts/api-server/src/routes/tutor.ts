@@ -1,16 +1,18 @@
-import { Router, type Request, type Response } from "express";
+import express, { Router, type Request, type Response } from "express";
 import { getAuth } from "@clerk/express";
 import { randomUUID } from "node:crypto";
 import { and, eq, desc } from "drizzle-orm";
-import { db, tutorProfiles, tutorClassrooms, tutorUploads, tutorAttempts, tutorExams, tutorPageJobs } from "@workspace/db";
-import { UpdateProfileBody, CreateClassroomBody, AskClassroomQuestionBody, SubmitExplainBackBody, SubmitPracticeAttemptBody, StartExamBody, SubmitExamAnswerBody, RequestUploadUrlBody, GetLessonResponse, SubmitDiagnosticBody } from "@workspace/api-zod";
+import { db, tutorProfiles, tutorClassrooms, tutorUploads, tutorAttempts, tutorExams, tutorPageJobs, tutorSourceChecks } from "@workspace/db";
+import { UpdateProfileBody, CreateClassroomBody, AskClassroomQuestionBody, SubmitExplainBackBody, SubmitPracticeAttemptBody, StartExamBody, SubmitExamAnswerBody, RequestUploadUrlBody, GetLessonResponse, SubmitDiagnosticBody, SynthesizeSpeechBody } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { isLocalStorage, LocalUploadError, MAX_UPLOAD_BYTES, writeLocalUpload } from "../lib/localObjectStorage";
+import { isLocalAuth, LOCAL_USER_ID } from "../lib/localAuth";
 import { ask, lesson, grade, practice, mapPdf, loadPdf, verifiedPageConcepts, validateReferences } from "../lib/tutor-ai";
 import { batchProcess } from "@workspace/integrations-gemini-ai/batch";
 import type { Profile, Room, SourcePage, Question } from "../lib/tutor-types";
-import { cancelClassroomAnalysis, pageJobs, retryFailedPages } from "../lib/tutor-ingestion";
-import { isLocalAuth, LOCAL_USER_ID } from "../lib/localAuth";
+import { cancelClassroomAnalysis, getClassroomDocumentStages, pageJobs, retryFailedPages } from "../lib/tutor-ingestion";
+import { synthesizeMmsSpeech } from "../lib/mms-tts";
+import { transcribeWithGroq } from "../lib/groq-stt";
 
 const router = Router();
 const storage = new ObjectStorageService();
@@ -25,7 +27,7 @@ router.use((req, res, next) => {
 });
 async function profile(id: string): Promise<Profile> {
   const [row] = await db.select().from(tutorProfiles).where(eq(tutorProfiles.id, id));
-  return row ? { ...(row.data as Profile), id } : { id, gradeLevel: "", goal: "", explanationStyle: "step-by-step", pace: "steady", sessionMinutes: 15, vocabularySupport: false, accessibilityNeeds: "", confidence: "starting-out", interests: "", completed: false };
+  return row ? { id, gradeLevel: "", goal: "", explanationStyle: "step-by-step", pace: "steady", sessionMinutes: 15, vocabularySupport: false, accessibilityNeeds: "", confidence: "starting-out", interests: "", learningLanguage: "en-US", interestTerminology: false, completed: false, ...(row.data as Partial<Profile>) } : { id, gradeLevel: "", goal: "", explanationStyle: "step-by-step", pace: "steady", sessionMinutes: 15, vocabularySupport: false, accessibilityNeeds: "", confidence: "starting-out", interests: "", learningLanguage: "en-US", interestTerminology: false, completed: false };
 }
 async function getClassroomSources(userId: string, id: string) {
   const [row] = await db.select().from(tutorClassrooms).where(and(eq(tutorClassrooms.id, id), eq(tutorClassrooms.ownerId, userId)));
@@ -62,6 +64,66 @@ router.put("/profile", async (req, res) => {
   const rows = await db.select().from(tutorClassrooms).where(eq(tutorClassrooms.ownerId, user(res)));
   for (const row of rows) { const room = row.data as Room; room.lessons = {}; await saveRoom(room); }
   res.json(data);
+});
+router.post("/speech/synthesize", async (req, res): Promise<void> => {
+  const input = SynthesizeSpeechBody.safeParse(req.body);
+  if (!input.success) { res.status(400).json({ error: "Choose a language and provide a shorter passage to read aloud." }); return; }
+  const supportedLanguage = process.env.HF_MMS_LANGUAGE ?? "en-US";
+  const languageLabels: Record<string, string> = {
+    "en-US": "English", "hi-IN": "Hindi", "bn-IN": "Bengali", "es-ES": "Spanish",
+    "fr-FR": "French", "de-DE": "German", "pt-BR": "Portuguese", "ja-JP": "Japanese", "ar-XA": "Arabic",
+  };
+  if (input.data.language !== supportedLanguage) {
+    res.status(400).json({ error: `The configured Meta MMS endpoint supports ${languageLabels[supportedLanguage] ?? supportedLanguage} only. Choose that language or configure a matching endpoint.` });
+    return;
+  }
+  const endpointUrl = process.env.HF_MMS_ENDPOINT_URL;
+  const token = process.env.HF_TOKEN;
+  if (!endpointUrl || !token) {
+    res.status(503).json({ error: "Meta MMS read-aloud is not configured yet. Add the English Hugging Face endpoint URL to the environment." });
+    return;
+  }
+  try {
+    res.json(await synthesizeMmsSpeech({ endpointUrl, token, text: input.data.text }));
+  } catch (error) {
+    req.log.warn({ err: error }, "Meta MMS text-to-speech request unavailable");
+    res.status(503).json({ error: error instanceof Error ? error.message : "Could not create audio right now. Please try again." });
+  }
+});
+router.post("/speech/transcribe", express.raw({ type: ["audio/*", "application/octet-stream"], limit: "25mb" }), async (req, res): Promise<void> => {
+  const audio = req.body;
+  const mimeType = String(req.headers["content-type"] ?? "").split(";")[0].toLowerCase();
+  const supportedTypes: Record<string, string> = {
+    "audio/webm": "recording.webm", "audio/ogg": "recording.ogg", "audio/wav": "recording.wav",
+    "audio/mpeg": "recording.mp3", "audio/mp4": "recording.mp4", "application/octet-stream": "recording.webm",
+  };
+  if (!Buffer.isBuffer(audio) || audio.length === 0 || audio.length > 25 * 1024 * 1024 || !supportedTypes[mimeType]) {
+    res.status(400).json({ error: "Record a short question in WebM, Ogg, WAV, MP3, or MP4 audio format." });
+    return;
+  }
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    res.status(503).json({ error: "Voice input is not configured yet. Add GROQ_API_KEY in Replit Secrets." });
+    return;
+  }
+  const languageCodes: Record<string, string> = {
+    "en-US": "en", "hi-IN": "hi", "bn-IN": "bn", "es-ES": "es", "fr-FR": "fr",
+    "de-DE": "de", "pt-BR": "pt", "ja-JP": "ja", "ar-XA": "ar",
+  };
+  const preferredLanguage = languageCodes[(await profile(user(res))).learningLanguage];
+  try {
+    res.json(await transcribeWithGroq({
+      apiKey,
+      model: process.env.GROQ_STT_MODEL ?? "whisper-large-v3-turbo",
+      audio,
+      mimeType,
+      filename: supportedTypes[mimeType],
+      language: preferredLanguage,
+    }));
+  } catch (error) {
+    req.log.warn({ err: error }, "Groq speech-to-text request unavailable");
+    res.status(503).json({ error: error instanceof Error ? error.message : "Could not transcribe audio. Please try again." });
+  }
 });
 router.get("/classrooms", async (_req, res) => {
   const rows = await db.select().from(tutorClassrooms).where(eq(tutorClassrooms.ownerId, user(res)));
@@ -111,7 +173,12 @@ router.post("/classrooms/:classroomId/retry-failed-pages", async (req, res) => {
 });
 router.get("/classrooms/:classroomId", async (req, res) => {
   const { room, pages } = await getClassroomSources(user(res), classroomId(req));
-  res.json({ ...reviewedRoom(room, await attempts(room.id)), sourcePages: pages });
+  const stages = await getClassroomDocumentStages(room.id);
+  res.json({
+    ...reviewedRoom(room, await attempts(room.id)),
+    documents: room.documents.map((document) => ({ ...document, currentStages: stages.get(document.id) ?? [] })),
+    sourcePages: pages,
+  });
 });
 router.post("/classrooms/:classroomId/verify-pages", async (req, res) => {
   const { room, pages } = await getClassroomSources(user(res), classroomId(req));
@@ -328,8 +395,12 @@ router.post("/storage/uploads/request-url", async (req, res) => {
 router.put("/storage/uploads/local/:id", async (req, res) => {
   if (!isLocalStorage()) throw new HttpError(404, "Not found.");
   const objectPath = `/objects/uploads/${req.params.id}`;
-  const [upload] = await db.select().from(tutorUploads).where(and(eq(tutorUploads.path, objectPath), eq(tutorUploads.ownerId, user(res))));
-  if (!upload) throw new HttpError(404, "Upload not found.");
+  const ownerId = user(res);
+  const [upload] = await db.select().from(tutorUploads).where(and(eq(tutorUploads.path, objectPath), eq(tutorUploads.ownerId, ownerId)));
+  const [sourceCheck] = upload
+    ? []
+    : await db.select({ id: tutorSourceChecks.id }).from(tutorSourceChecks).where(and(eq(tutorSourceChecks.objectPath, objectPath), eq(tutorSourceChecks.ownerId, ownerId)));
+  if (!upload && !sourceCheck) throw new HttpError(404, "Upload not found.");
   if (Number(req.headers["content-length"]) > MAX_UPLOAD_BYTES) throw new HttpError(413, "Each PDF must be 25 MB or smaller.");
   try {
     await writeLocalUpload(`uploads/${req.params.id}`, req);

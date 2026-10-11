@@ -10,6 +10,8 @@ An accessible personal teaching assistant that teaches, practises and examines s
 - Teaching with diagnostics and explain-back, a Practice Arena with tracked hints, and adaptive exams
 - Verified citations, with explicit "out of scope" answers when the documents don't cover a question
 - Progress radar, concept mastery and spaced review reminders
+- Home, a getting-started tour, and an optional source check that stays separate from classroom tutoring
+- Optional read-aloud and voice input when Hugging Face MMS and Groq are configured
 - Keyboard-first controls, large text, high contrast and reduced motion
 
 ## Tech stack

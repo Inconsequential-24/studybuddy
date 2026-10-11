@@ -1,0 +1,186 @@
+format: "replit.sdm"
+version: 1
+size:
+  width: 1920
+  height: 1080
+background:
+  kind: "solid"
+  color:
+    kind: "token"
+    token: "accent"
+theme:
+  colors:
+    background: "#F8F6F1"
+    foreground: "#112027"
+    accent: "#144E57"
+    surface: "#FDFDFB"
+    muted: "#485860"
+    secondary: "#EEEAE2"
+  fonts:
+    display: "Fraunces"
+    body: "Atkinson Hyperlegible"
+elements:
+  -
+    id: "rightField"
+    type: "shape"
+    frame:
+      x: 1390
+      y: 0
+      width: 530
+      height: 1080
+    geometry:
+      kind: "preset"
+      preset: "rect"
+    fill:
+      kind: "solid"
+      color:
+        kind: "token"
+        token: "secondary"
+  -
+    id: "titleRule"
+    type: "shape"
+    frame:
+      x: 120
+      y: 260
+      width: 160
+      height: 8
+    geometry:
+      kind: "preset"
+      preset: "rect"
+    fill:
+      kind: "solid"
+      color:
+        kind: "token"
+        token: "background"
+  -
+    id: "title"
+    type: "text"
+    frame:
+      x: 120
+      y: 342
+      width: 1220
+      height: 220
+    body:
+      paragraphs:
+        -
+          runs:
+            -
+              text: "StudyBuddy"
+          defaultRunStyle:
+            font:
+              kind: "token"
+              token: "display"
+            sizePt: 68
+            weight: 600
+            color:
+              kind: "token"
+              token: "background"
+          lineHeight: 1.1
+          spaceAfterPt: 12
+  -
+    id: "subtitle"
+    type: "text"
+    frame:
+      x: 120
+      y: 620
+      width: 1160
+      height: 260
+    body:
+      paragraphs:
+        -
+          runs:
+            -
+              text: "An accessible teaching assistant grounded in the learner’s own PDFs."
+          defaultRunStyle:
+            font:
+              kind: "token"
+              token: "body"
+            sizePt: 24
+            weight: 400
+            color:
+              kind: "token"
+              token: "background"
+          lineHeight: 1.25
+          spaceAfterPt: 12
+        -
+          runs:
+            -
+              text: "Stakeholder overview"
+          defaultRunStyle:
+            font:
+              kind: "token"
+              token: "body"
+            sizePt: 22
+            weight: 400
+            color:
+              kind: "token"
+              token: "background"
+          lineHeight: 1.25
+          spaceAfterPt: 12
+  -
+    id: "brand"
+    type: "text"
+    frame:
+      x: 120
+      y: 74
+      width: 1200
+      height: 56
+    body:
+      paragraphs:
+        -
+          runs:
+            -
+              text: "StudyBuddy / Stakeholder overview"
+          defaultRunStyle:
+            font:
+              kind: "token"
+              token: "body"
+            sizePt: 15
+            weight: 400
+            color:
+              kind: "token"
+              token: "background"
+          lineHeight: 1.25
+          spaceAfterPt: 0
+  -
+    id: "footerRule"
+    type: "shape"
+    frame:
+      x: 120
+      y: 994
+      width: 1680
+      height: 2
+    geometry:
+      kind: "preset"
+      preset: "rect"
+    fill:
+      kind: "solid"
+      color:
+        kind: "token"
+        token: "background"
+  -
+    id: "page"
+    type: "text"
+    frame:
+      x: 1600
+      y: 1016
+      width: 200
+      height: 50
+    body:
+      paragraphs:
+        -
+          runs:
+            -
+              text: "01 / 18"
+          defaultRunStyle:
+            font:
+              kind: "token"
+              token: "body"
+            sizePt: 15
+            weight: 400
+            color:
+              kind: "token"
+              token: "foreground"
+          lineHeight: 1.25
+          spaceAfterPt: 0
+          align: "right"

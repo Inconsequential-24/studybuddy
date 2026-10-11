@@ -14,14 +14,68 @@ async function assertProcessing(page, id, expect) {
   await assertLocked(page, id, expect);
 }
 
-async function assertReady(page, id, expect) {
+async function assertReady(page, id, expect, { pageCount = 2, conceptTitles = ["Fixture concept 1"] } = {}) {
   await expect(page.getByRole("main").getByText("Ready", { exact: true })).toBeVisible();
-  await expect(page.getByText("2 of 2 pages verified.")).toBeVisible();
+  await expect(page.getByText(`${pageCount} of ${pageCount} pages verified.`)).toBeVisible();
   await expect(page.getByText("No flagged pages.", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Start teaching" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Fixture concept 1" })).toBeVisible();
+  for (const title of conceptTitles) {
+    await expect(page.getByRole("link", { name: title, exact: true })).toBeVisible();
+  }
   for (const slug of ["teach", "practice", "exam"]) {
     await expect(page.locator(`a[href="/classrooms/${id}/${slug}"]`).first()).toBeVisible();
+  }
+}
+
+async function assertMultiDocumentEvidence(snapshot, expect) {
+  const room = snapshot.data;
+  const jobs = [...snapshot.jobs].sort((a, b) => a.page - b.page);
+  const pageCount = room.documents.reduce((count, document) => count + document.pageCount, 0);
+  expect(jobs.map((job) => job.page)).toEqual(Array.from({ length: pageCount }, (_, index) => index + 1));
+
+  for (const job of jobs) {
+    let offset = 0;
+    const document = room.documents.find((candidate) => {
+      offset += candidate.pageCount;
+      return job.page <= offset;
+    });
+    expect(document, `A document must own global page ${job.page}`).toBeDefined();
+    expect(job.documentId, `Job ${job.page} document ID`).toBe(document.id);
+    expect(job.localPage, `Job ${job.page} local page`).toBe(job.page - (offset - document.pageCount));
+  }
+
+  for (const source of snapshot.sourceMap) {
+    const job = jobs.find((candidate) => candidate.page === source.page);
+    expect(job, `A job must exist for source page ${source.page}`).toBeDefined();
+    expect(source.documentId, `Source page ${source.page} document ID`).toBe(job.documentId);
+    expect(source.localPage, `Source page ${source.page} local page`).toBe(job.localPage);
+    expect(job.result.source).toEqual(source);
+    const concept = room.concepts.find((candidate) => candidate.pageRefs.includes(source.page));
+    expect(concept, `A concept must retain page ${source.page}`).toBeDefined();
+    for (const figure of source.figures) {
+      expect(concept.refs).toContainEqual({
+        page: source.page, kind: "figure", sourceId: figure.id, quote: figure.caption,
+      });
+    }
+    for (const table of source.tables) {
+      expect(concept.refs).toContainEqual({
+        page: source.page, kind: "table", sourceId: table.id, quote: table.caption,
+      });
+    }
+  }
+}
+
+function assertOnlyFailedPageQueued(snapshot, failedPage, expect) {
+  const jobs = [...snapshot.jobs].sort((a, b) => a.page - b.page);
+  expect(jobs.filter((job) => job.status === "pending").map((job) => job.page)).toEqual([failedPage]);
+  for (const job of jobs) {
+    if (job.page === failedPage) {
+      expect(job).toMatchObject({
+        status: "pending", attempts: 0, failure: null, result: null,
+      });
+    } else {
+      expect(job.status, `Previously verified page ${job.page} must not be queued`).toBe("succeeded");
+    }
   }
 }
 
@@ -32,14 +86,17 @@ async function assertAttention(page, expect, errorText) {
 }
 
 function waitForStatusPoll(page, id, status) {
-  return page.waitForResponse(async (response) =>
-    response.url().endsWith(`/api/classrooms/${id}`) &&
-    response.request().method() === "GET" &&
-    (await response.json()).status === status,
-  { timeout: 20000 });
+  let matchingBody;
+  return page.waitForResponse(async (response) => {
+    if (!response.url().endsWith(`/api/classrooms/${id}`) || response.request().method() !== "GET") return false;
+    const body = await response.json();
+    if (body.status !== status) return false;
+    matchingBody = body;
+    return true;
+  }, { timeout: 20000 }).then((response) => ({ response, body: matchingBody }));
 }
 
-async function submitRetry(page, id, sourceMap, expect, delayMs = 700) {
+async function submitRetry(page, id, sourceMap, expect, delayMs = 700, expectedMappedPages = 1) {
   const retryUrl = `/api/classrooms/${id}/retry-failed-pages`;
   // Delay before forwarding so the original browser request (including Clerk
   // auth) is continued intact; route.fetch() drops runner auth in this setup.
@@ -55,10 +112,13 @@ async function submitRetry(page, id, sourceMap, expect, delayMs = 700) {
   const body = await response.json();
   expect(response.status()).toBe(200);
   expect(body.status).toBe("processing");
-  expect(body.coverage.mappedPages).toBe(1);
+  expect(body.coverage.mappedPages).toBe(expectedMappedPages);
   expect(body.sourcePages).toEqual(sourceMap);
   await assertProcessing(page, id, expect);
   return { response, body };
 }
 
-module.exports = { assertLocked, assertProcessing, assertReady, assertAttention, waitForStatusPoll, submitRetry };
+module.exports = {
+  assertLocked, assertProcessing, assertReady, assertAttention, waitForStatusPoll, submitRetry,
+  assertMultiDocumentEvidence, assertOnlyFailedPageQueued,
+};

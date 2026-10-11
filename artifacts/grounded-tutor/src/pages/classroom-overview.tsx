@@ -1,13 +1,107 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'wouter';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Mic, Square } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetClassroomQueryKey, getListClassroomsQueryKey, useAskClassroomQuestion, useGetClassroom, useRetryFailedPages } from '@workspace/api-client-react';
+import { getGetClassroomQueryKey, getListClassroomsQueryKey, transcribeSpeech, useAskClassroomQuestion, useGetClassroom, useRetryFailedPages } from '@workspace/api-client-react';
 import { AppShell } from '@/components/shell';
 import { Citations, ErrorBlock, LoadingBlock, MasteryBar, Notice, PageButton, PageHeader, Panel } from '@/components/bits';
 import { StatusPill } from '@/pages/classrooms';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { ReviewProgress } from '@/components/review-progress';
+import { reviewStageLabel } from '@/components/review-stage-label';
+
+function VoiceQuestionInput({ onTranscript }: { onTranscript: (text: string) => void }) {
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [status, setStatus] = useState('');
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const disposedRef = useRef(false);
+
+  useEffect(() => () => {
+    disposedRef.current = true;
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  const start = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setStatus('Voice recording is not supported in this browser. You can type your question instead.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+        .find((candidate) => MediaRecorder.isTypeSupported(candidate));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
+      recorder.onerror = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        setRecording(false);
+        setStatus('Recording stopped unexpectedly. Please try again or type your question.');
+      };
+      recorder.onstop = () => {
+        if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        setRecording(false);
+        if (disposedRef.current) return;
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        if (!blob.size) { setStatus('No audio was recorded. Try again or type your question.'); return; }
+        if (blob.size > 25 * 1024 * 1024) { setStatus('That recording is too large. Please record a shorter question.'); return; }
+        setTranscribing(true);
+        setStatus('Transcribing your recording…');
+        void transcribeSpeech(blob, { headers: { 'Content-Type': blob.type || 'application/octet-stream' } })
+          .then(({ text }) => {
+            if (disposedRef.current) return;
+            if (!text.trim()) { setStatus('No speech was detected. Try again or type your question.'); return; }
+            onTranscript(text);
+            setStatus('Transcription added. Review it, then select Ask.');
+          })
+          .catch((error: unknown) => {
+            if (!disposedRef.current) setStatus(error instanceof Error ? error.message : 'Could not transcribe that recording. Please try again.');
+          })
+          .finally(() => { if (!disposedRef.current) setTranscribing(false); });
+      };
+      recorder.start();
+      setRecording(true);
+      setStatus('Recording. Speak your question, then select Stop recording. Audio is sent to Groq for transcription.');
+      timerRef.current = window.setTimeout(() => {
+        if (recorder.state === 'recording') {
+          setStatus('One-minute limit reached. Transcribing your recording…');
+          recorder.stop();
+        }
+      }, 60_000);
+    } catch {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setStatus('Microphone access was not available. Allow microphone access or type your question.');
+    }
+  };
+
+  const stop = () => {
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
+  };
+
+  return (
+    <div className="space-y-2">
+      <Button type="button" variant="outline" size="sm" onClick={recording ? stop : () => void start()} disabled={transcribing} aria-pressed={recording}>
+        {recording ? <Square className="mr-2 h-4 w-4" aria-hidden /> : <Mic className="mr-2 h-4 w-4" aria-hidden />}
+        {recording ? 'Stop recording' : transcribing ? 'Transcribing…' : 'Record a question'}
+      </Button>
+      <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+        {status || 'Record up to one minute. Audio is sent to Groq to transcribe; review the text before asking.'}
+      </p>
+    </div>
+  );
+}
 
 function Ask({ id }: { id: string }) {
   const [question, setQ] = useState('');
@@ -18,6 +112,7 @@ function Ask({ id }: { id: string }) {
       <form onSubmit={(e) => { e.preventDefault(); if (question.trim()) ask.mutate({ classroomId: id, data: { question: question.trim() } }); }} className="space-y-3">
         <label htmlFor="q" className="block text-muted-foreground">Answers use only this classroom's pages.</label>
         <Textarea id="q" rows={2} value={question} onChange={(e) => setQ(e.target.value)} placeholder="e.g. What is the difference between osmosis and diffusion?" />
+        <VoiceQuestionInput onTranscript={(text) => setQ((current) => current.trim() ? `${current.trimEnd()} ${text}` : text)} />
         <Button type="submit" disabled={ask.isPending || !question.trim()}>{ask.isPending ? 'Searching your pages' : 'Ask'}</Button>
       </form>
       <div aria-live="polite" className="mt-4">
@@ -43,7 +138,7 @@ export default function Overview() {
       {q.isLoading ? <LoadingBlock rows={4} /> : q.error || !c ? <ErrorBlock error={q.error} onRetry={() => q.refetch()} /> : (
         <>
           <PageHeader eyebrow={c.subject || 'Classroom'} title={c.name} actions={<StatusPill status={c.status} />} />
-          {c.status === 'processing' && <div role="status" className="mb-6"><Notice>Your PDFs are being verified one page at a time. Saved pages will not be re-read after a restart. This page refreshes automatically. Lessons unlock only when every page is verified.</Notice></div>}
+          {c.status === 'processing' && <div role="status" aria-live="polite" className="mb-6 space-y-3"><Notice>Your PDFs are being verified one page at a time. Saved pages will not be re-read after a restart. This page refreshes automatically. Lessons unlock only when every page is verified.</Notice><ReviewProgress /></div>}
           {c.status === 'needs-attention' && <div role="alert" className="mb-6"><Notice>{c.coverage.flaggedPages.length ? 'Some pages could not be verified after three attempts. Retry those pages below; verified pages are kept.' : 'No teachable concepts could be verified in these documents.'} Teaching, practice, and exams remain locked until coverage is complete.</Notice></div>}
           <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
             <div className="space-y-6">
@@ -99,7 +194,12 @@ export default function Overview() {
               <Panel title="Original PDFs">
                 <ul className="space-y-3">
                   {c.documents.map((d) => (
-                    <li key={d.id}><p className="break-words font-bold">{d.name}</p><p className="mb-1 text-sm text-muted-foreground">{d.pageCount} pages</p><PageButton classroomId={id} page={1} label="Open viewer" /></li>
+                    <li key={d.id}>
+                      <p className="break-words font-bold">{d.name}</p>
+                      <p className="mb-1 text-sm text-muted-foreground">{d.pageCount} pages</p>
+                      {c.status === 'processing' && d.currentStages?.length ? <p className="mb-2 text-sm font-semibold text-primary">Current stages: {d.currentStages.map(reviewStageLabel).join(' · ')}</p> : null}
+                      <PageButton classroomId={id} page={1} label="Open viewer" />
+                    </li>
                   ))}
                 </ul>
               </Panel>

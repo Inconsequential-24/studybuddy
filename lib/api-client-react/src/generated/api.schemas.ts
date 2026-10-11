@@ -37,6 +37,21 @@ export const StudentProfileConfidence = {
   confident: 'confident',
 } as const;
 
+export type StudentProfileLearningLanguage = typeof StudentProfileLearningLanguage[keyof typeof StudentProfileLearningLanguage];
+
+
+export const StudentProfileLearningLanguage = {
+  'en-US': 'en-US',
+  'hi-IN': 'hi-IN',
+  'bn-IN': 'bn-IN',
+  'es-ES': 'es-ES',
+  'fr-FR': 'fr-FR',
+  'de-DE': 'de-DE',
+  'pt-BR': 'pt-BR',
+  'ja-JP': 'ja-JP',
+  'ar-XA': 'ar-XA',
+} as const;
+
 export interface StudentProfile {
   id: string;
   gradeLevel: string;
@@ -48,6 +63,8 @@ export interface StudentProfile {
   accessibilityNeeds: string;
   confidence: StudentProfileConfidence;
   interests: string;
+  learningLanguage: StudentProfileLearningLanguage;
+  interestTerminology: boolean;
   completed: boolean;
 }
 
@@ -79,6 +96,21 @@ export const ProfileInputConfidence = {
   confident: 'confident',
 } as const;
 
+export type ProfileInputLearningLanguage = typeof ProfileInputLearningLanguage[keyof typeof ProfileInputLearningLanguage];
+
+
+export const ProfileInputLearningLanguage = {
+  'en-US': 'en-US',
+  'hi-IN': 'hi-IN',
+  'bn-IN': 'bn-IN',
+  'es-ES': 'es-ES',
+  'fr-FR': 'fr-FR',
+  'de-DE': 'de-DE',
+  'pt-BR': 'pt-BR',
+  'ja-JP': 'ja-JP',
+  'ar-XA': 'ar-XA',
+} as const;
+
 export interface ProfileInput {
   /** @minLength 1 */
   gradeLevel: string;
@@ -95,6 +127,51 @@ export interface ProfileInput {
   accessibilityNeeds: string;
   confidence: ProfileInputConfidence;
   interests: string;
+  learningLanguage: ProfileInputLearningLanguage;
+  interestTerminology: boolean;
+}
+
+export type SpeechInputLanguage = typeof SpeechInputLanguage[keyof typeof SpeechInputLanguage];
+
+
+export const SpeechInputLanguage = {
+  'en-US': 'en-US',
+  'hi-IN': 'hi-IN',
+  'bn-IN': 'bn-IN',
+  'es-ES': 'es-ES',
+  'fr-FR': 'fr-FR',
+  'de-DE': 'de-DE',
+  'pt-BR': 'pt-BR',
+  'ja-JP': 'ja-JP',
+  'ar-XA': 'ar-XA',
+} as const;
+
+export interface SpeechInput {
+  /**
+     * @minLength 1
+     * @maxLength 4500
+     */
+  text: string;
+  language: SpeechInputLanguage;
+}
+
+export type SpeechAudioAudioMimeType = typeof SpeechAudioAudioMimeType[keyof typeof SpeechAudioAudioMimeType];
+
+
+export const SpeechAudioAudioMimeType = {
+  'audio/wav': 'audio/wav',
+  'audio/mpeg': 'audio/mpeg',
+} as const;
+
+export interface SpeechAudio {
+  /** Base64-encoded audio returned by the Meta MMS endpoint */
+  audioContent: string;
+  audioMimeType: SpeechAudioAudioMimeType;
+}
+
+export interface SpeechTranscription {
+  /** Transcribed spoken words */
+  text: string;
 }
 
 export type ClassroomSummaryStatus = typeof ClassroomSummaryStatus[keyof typeof ClassroomSummaryStatus];
@@ -201,11 +278,22 @@ export const ClassroomDetailStatus = {
   'needs-attention': 'needs-attention',
 } as const;
 
+export type ClassroomReviewStage = typeof ClassroomReviewStage[keyof typeof ClassroomReviewStage];
+
+
+export const ClassroomReviewStage = {
+  'extracting-text': 'extracting-text',
+  'rendering-page': 'rendering-page',
+  'mapping-page': 'mapping-page',
+  'checking-citations': 'checking-citations',
+} as const;
+
 export type ClassroomDetailDocumentsItem = {
   id: string;
   name: string;
   pageCount: number;
   objectPath: string;
+  currentStages?: ClassroomReviewStage[];
 };
 
 export type AccessibleSourcePageFiguresItem = {
@@ -488,5 +576,229 @@ export interface UploadUrlInput {
 export interface UploadUrl {
   uploadURL: string;
   objectPath: string;
+}
+
+export type SourceCheckUploadInputMode = typeof SourceCheckUploadInputMode[keyof typeof SourceCheckUploadInputMode];
+
+
+export const SourceCheckUploadInputMode = {
+  skim: 'skim',
+  thorough: 'thorough',
+} as const;
+
+export interface SourceCheckUploadInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 26214400
+     */
+  size: number;
+  mode: SourceCheckUploadInputMode;
+}
+
+export interface SourceCheckUpload {
+  id: string;
+  uploadURL: string;
+  objectPath: string;
+}
+
+export type SourceCheckHistoryItemMode = typeof SourceCheckHistoryItemMode[keyof typeof SourceCheckHistoryItemMode];
+
+
+export const SourceCheckHistoryItemMode = {
+  skim: 'skim',
+  thorough: 'thorough',
+} as const;
+
+export type SourceCheckHistoryItemStatus = typeof SourceCheckHistoryItemStatus[keyof typeof SourceCheckHistoryItemStatus];
+
+
+export const SourceCheckHistoryItemStatus = {
+  uploading: 'uploading',
+  processing: 'processing',
+  complete: 'complete',
+  failed: 'failed',
+} as const;
+
+export type SourceCheckStage = typeof SourceCheckStage[keyof typeof SourceCheckStage];
+
+
+export const SourceCheckStage = {
+  'validating-pdf': 'validating-pdf',
+  'extracting-text': 'extracting-text',
+  'rendering-pages': 'rendering-pages',
+  'comparing-claims': 'comparing-claims',
+  'validating-findings': 'validating-findings',
+} as const;
+
+export interface SourceCheckHistoryItem {
+  id: string;
+  fileName: string;
+  mode: SourceCheckHistoryItemMode;
+  status: SourceCheckHistoryItemStatus;
+  stage: SourceCheckStage | null;
+  /** @nullable */
+  failure: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface SourceCheckHistory {
+  items: SourceCheckHistoryItem[];
+  /** @minimum 0 */
+  totalCount: number;
+}
+
+export type PdfActivitySourceCheckKind = typeof PdfActivitySourceCheckKind[keyof typeof PdfActivitySourceCheckKind];
+
+
+export const PdfActivitySourceCheckKind = {
+  'source-check': 'source-check',
+} as const;
+
+export type PdfActivitySourceCheckMode = typeof PdfActivitySourceCheckMode[keyof typeof PdfActivitySourceCheckMode];
+
+
+export const PdfActivitySourceCheckMode = {
+  skim: 'skim',
+  thorough: 'thorough',
+} as const;
+
+export type PdfActivitySourceCheckStatus = typeof PdfActivitySourceCheckStatus[keyof typeof PdfActivitySourceCheckStatus];
+
+
+export const PdfActivitySourceCheckStatus = {
+  uploading: 'uploading',
+  processing: 'processing',
+  complete: 'complete',
+  failed: 'failed',
+} as const;
+
+export interface PdfActivitySourceCheck {
+  kind: PdfActivitySourceCheckKind;
+  id: string;
+  fileName: string;
+  mode: PdfActivitySourceCheckMode;
+  status: PdfActivitySourceCheckStatus;
+  stage: SourceCheckStage | null;
+  /** @nullable */
+  failure: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export type PdfActivityClassroomPdfKind = typeof PdfActivityClassroomPdfKind[keyof typeof PdfActivityClassroomPdfKind];
+
+
+export const PdfActivityClassroomPdfKind = {
+  'classroom-pdf': 'classroom-pdf',
+} as const;
+
+export type PdfActivityClassroomPdfStatus = typeof PdfActivityClassroomPdfStatus[keyof typeof PdfActivityClassroomPdfStatus];
+
+
+export const PdfActivityClassroomPdfStatus = {
+  processing: 'processing',
+  ready: 'ready',
+  'needs-attention': 'needs-attention',
+} as const;
+
+export interface PdfActivityClassroomPdf {
+  kind: PdfActivityClassroomPdfKind;
+  id: string;
+  classroomId: string;
+  classroomName: string;
+  fileName: string;
+  status: PdfActivityClassroomPdfStatus;
+  currentStages: ClassroomReviewStage[];
+  createdAt: string;
+}
+
+export interface PdfActivityHistory {
+  items: (PdfActivitySourceCheck | PdfActivityClassroomPdf)[];
+  /** @minimum 0 */
+  totalCount: number;
+}
+
+export type SourceCheckStatusMode = typeof SourceCheckStatusMode[keyof typeof SourceCheckStatusMode];
+
+
+export const SourceCheckStatusMode = {
+  skim: 'skim',
+  thorough: 'thorough',
+} as const;
+
+export type SourceCheckStatusStatus = typeof SourceCheckStatusStatus[keyof typeof SourceCheckStatusStatus];
+
+
+export const SourceCheckStatusStatus = {
+  uploading: 'uploading',
+  processing: 'processing',
+  complete: 'complete',
+  failed: 'failed',
+} as const;
+
+export type SourceCheckReportMode = typeof SourceCheckReportMode[keyof typeof SourceCheckReportMode];
+
+
+export const SourceCheckReportMode = {
+  skim: 'skim',
+  thorough: 'thorough',
+} as const;
+
+export type SourceCheckFindingEvidenceKind = typeof SourceCheckFindingEvidenceKind[keyof typeof SourceCheckFindingEvidenceKind];
+
+
+export const SourceCheckFindingEvidenceKind = {
+  text: 'text',
+  figure: 'figure',
+  table: 'table',
+} as const;
+
+export type SourceCheckFindingStatus = typeof SourceCheckFindingStatus[keyof typeof SourceCheckFindingStatus];
+
+
+export const SourceCheckFindingStatus = {
+  'confirmed-conflict': 'confirmed-conflict',
+  'possible-conflict': 'possible-conflict',
+} as const;
+
+export interface SourceCheckFinding {
+  /** @minimum 1 */
+  page: number;
+  evidenceKind: SourceCheckFindingEvidenceKind;
+  /** @nullable */
+  sourceId?: string | null;
+  pdfQuote: string;
+  status: SourceCheckFindingStatus;
+  explanation: string;
+  sourceName: string;
+  sourceUrl: string;
+}
+
+export interface SourceCheckReport {
+  mode: SourceCheckReportMode;
+  limitations: string;
+  /** @minimum 0 */
+  reviewedPages: number;
+  /** @minimum 0 */
+  totalPages: number;
+  findings: SourceCheckFinding[];
+  uncheckedClaims: string[];
+}
+
+export interface SourceCheckStatus {
+  id: string;
+  mode: SourceCheckStatusMode;
+  status: SourceCheckStatusStatus;
+  stage: SourceCheckStage | null;
+  report: SourceCheckReport | null;
+  /** @nullable */
+  failure: string | null;
+  expiresAt: string;
 }
 

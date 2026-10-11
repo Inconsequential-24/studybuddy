@@ -1,0 +1,164 @@
+[
+  {
+    "id": "slide-01",
+    "position": 1,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-01.sdm.yaml",
+    "title": "StudyBuddy",
+    "description": "An accessible teaching assistant grounded in the learner’s own PDFs.; Stakeholder overview",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-02",
+    "position": 2,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-02.sdm.yaml",
+    "title": "StudyBuddy connects source material with active learning",
+    "description": "Private classrooms built from uploaded PDFs; Teaching, practice, and adaptive examinations in one workflow; Answers linked to verified source evidence; Accessibility controls built into the learning experience",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-03",
+    "position": 3,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-03.sdm.yaml",
+    "title": "Stakeholder overview",
+    "description": "The learning need and product approach; The student journey and core features; Grounding, accessibility, and data boundaries; Current limitations and a proposed pilot",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-04",
+    "position": 4,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-04.sdm.yaml",
+    "title": "Students need more than a place to read their notes",
+    "description": "Reading alone does not show what a student understands; Generic chat answers may go beyond assigned material; Learners need explanations, practice, and feedback; Access needs should not prevent participation",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-05",
+    "position": 5,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-05.sdm.yaml",
+    "title": "One classroom defines what the tutor can teach",
+    "description": "Upload notes, textbook chapters, or slides as PDFs; Each classroom has a fixed set of source documents; The tutor uses that classroom’s source map; No web search or cross-classroom facts are added",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-06",
+    "position": 6,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-06.sdm.yaml",
+    "title": "The student journey follows a repeatable learning loop",
+    "description": "Set learning preferences; Create a classroom and upload PDFs; Review document coverage before learning; Learn, practise, test, and review progress",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-07",
+    "position": 7,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-07.sdm.yaml",
+    "title": "Personalization changes presentation, not source facts",
+    "description": "Capture study level, goals, pace, and explanation style; Adjust session length and vocabulary support; Record confidence, interests, and optional access needs; Preferences can be updated as the learner’s needs change",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-08",
+    "position": 8,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-08.sdm.yaml",
+    "title": "PDF analysis combines visual content with extracted text",
+    "description": "Render pages so diagrams and tables can be examined; Combine Gemini vision analysis with the PDF text layer; Build concepts linked to text, figure, and table evidence; Show page coverage and flag verification gaps",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-09",
+    "position": 9,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-09.sdm.yaml",
+    "title": "Teaching checks understanding rather than only answering questions",
+    "description": "Use diagnostics to identify the learner’s starting point; Explain concepts using classroom evidence; Ask the student to explain the idea back; Provide feedback linked to the original source",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-10",
+    "position": 10,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-10.sdm.yaml",
+    "title": "Practice makes assistance visible",
+    "description": "Free recall, quick quizzes, figure labels, and application tasks; Quick quizzes include multiple-choice and short-answer questions; Page and quotation hints support students who need help; Hint use is tracked so assisted attempts remain distinguishable",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-11",
+    "position": 11,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-11.sdm.yaml",
+    "title": "Adaptive examinations reveal concepts that need more work",
+    "description": "Questions adjust in difficulty as the student responds; Citations appear after an answer, not before; Feedback connects results to classroom concepts; Results feed the learner’s progress view",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-12",
+    "position": 12,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-12.sdm.yaml",
+    "title": "Progress is based on the student’s recorded attempts",
+    "description": "Concept-level mastery shows where to focus; Six learning dimensions summarize performance; Review reminders identify concepts to revisit; Recent attempts and recommended next steps support planning",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-13",
+    "position": 13,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-13.sdm.yaml",
+    "title": "Accessibility is part of the core interface",
+    "description": "Keyboard-first navigation and a skip-to-content link; Readable typography and a large-text setting; High-contrast and reduced-motion settings; Screen-reader labels and a text table alongside the progress chart; Formal accessibility conformance has not yet been established",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-14",
+    "position": 14,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-14.sdm.yaml",
+    "title": "Source grounding makes answers inspectable",
+    "description": "Verify citation quotations against stored source evidence; Let students open the cited PDF page; Show original figures and tables rather than AI replacements; Decline questions outside the classroom’s evidence; Grounding reduces unsupported answers; it does not guarantee correctness",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-15",
+    "position": 15,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-15.sdm.yaml",
+    "title": "Private classrooms separate each learner’s material",
+    "description": "Signed-in access and classroom ownership checks; Original PDFs stored in private object storage; PostgreSQL stores profiles, classroom metadata, and learning attempts; Gemini processes page content and learning requests; Retention, consent, and institutional compliance require review before rollout",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-16",
+    "position": 16,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-16.sdm.yaml",
+    "title": "Verification and latency remain important product constraints",
+    "description": "Unverified pages can block teaching, practice, and exams; Persistent page jobs support recovery after interruptions; Failed pages can be retried while verified evidence is retained; PDF complexity and AI service limits affect waiting time; No published latency target or learning-outcome evidence is claimed",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-17",
+    "position": 17,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-17.sdm.yaml",
+    "title": "A focused pilot can test value before wider adoption",
+    "description": "Use representative text-heavy, scanned, and diagram-rich PDFs; Evaluate grounded-answer accuracy and page-verification failures; Test keyboard and assistive-technology journeys with learners; Measure processing time, response latency, completion, and cost; Review learning outcomes with educators",
+    "speakerNotes": ""
+  },
+  {
+    "id": "slide-18",
+    "position": 18,
+    "kind": "sdm",
+    "filepath": "src/data/slides/slide-18.sdm.yaml",
+    "title": "Stakeholder discussion and next steps",
+    "description": "Agree the first learner group and subject area; Nominate educators to validate source-grounded responses; Set accessibility, privacy, reliability, and cost acceptance criteria; Decide whether to proceed with a limited pilot; Defer wider rollout until those criteria are met",
+    "speakerNotes": ""
+  }
+]

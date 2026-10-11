@@ -7,6 +7,7 @@
  */
 import type { ProfileInputConfidence } from './profileInputConfidence';
 import type { ProfileInputExplanationStyle } from './profileInputExplanationStyle';
+import type { ProfileInputLearningLanguage } from './profileInputLearningLanguage';
 import type { ProfileInputPace } from './profileInputPace';
 
 export interface ProfileInput {
@@ -25,4 +26,6 @@ export interface ProfileInput {
   accessibilityNeeds: string;
   confidence: ProfileInputConfidence;
   interests: string;
+  learningLanguage: ProfileInputLearningLanguage;
+  interestTerminology: boolean;
 }

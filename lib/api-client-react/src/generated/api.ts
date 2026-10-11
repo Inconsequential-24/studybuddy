@@ -36,9 +36,17 @@ import type {
   HealthStatus,
   Lesson,
   MutationStatus,
+  PdfActivityHistory,
   PracticeAttemptInput,
   PracticePack,
   ProfileInput,
+  SourceCheckHistory,
+  SourceCheckStatus,
+  SourceCheckUpload,
+  SourceCheckUploadInput,
+  SpeechAudio,
+  SpeechInput,
+  SpeechTranscription,
   StudentProfile,
   TeachingPlan,
   TutorAnswer,
@@ -314,6 +322,182 @@ export const useUpdateProfile = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateProfileMutationOptions(options));
+    }
+
+export const getSynthesizeSpeechUrl = () => {
+
+
+
+
+  return `/api/speech/synthesize`
+}
+
+/**
+ * @summary Synthesize spoken learning content
+ */
+export const synthesizeSpeech = async (speechInput: SpeechInput, options?: Parameters<typeof customFetch>[1]): Promise<SpeechAudio> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SpeechAudio>(getSynthesizeSpeechUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(speechInput)
+  }
+);}
+
+
+
+
+
+export const getSynthesizeSpeechMutationKey = () => ['synthesizeSpeech'] as const;
+
+export const getSynthesizeSpeechMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,SynthesizeSpeechMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,SynthesizeSpeechMutationVariables, TContext> => {
+
+const mutationKey = getSynthesizeSpeechMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof synthesizeSpeech>>, SynthesizeSpeechMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  synthesizeSpeech(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SynthesizeSpeechMutationResult = NonNullable<Awaited<ReturnType<typeof synthesizeSpeech>>>
+    export type SynthesizeSpeechMutationBody = BodyType<SpeechInput>
+    export type SynthesizeSpeechMutationError = ErrorType<void>
+    export type SynthesizeSpeechMutationVariables = {data: BodyType<SpeechInput>}
+
+    /**
+ * @summary Synthesize spoken learning content
+ */
+export const useSynthesizeSpeech = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,SynthesizeSpeechMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof synthesizeSpeech>>,
+        TError,
+        SynthesizeSpeechMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSynthesizeSpeechMutationOptions(options));
+    }
+
+export const getTranscribeSpeechUrl = () => {
+
+
+
+
+  return `/api/speech/transcribe`
+}
+
+/**
+ * @summary Transcribe a student's recorded question
+ */
+export const transcribeSpeech = async (transcribeSpeechBody: Blob, options?: Parameters<typeof customFetch>[1]): Promise<SpeechTranscription> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SpeechTranscription>(getTranscribeSpeechUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream', ...getHeaders(options?.headers) },
+    body: transcribeSpeechBody
+  }
+);}
+
+
+
+
+
+export const getTranscribeSpeechMutationKey = () => ['transcribeSpeech'] as const;
+
+export const getTranscribeSpeechMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transcribeSpeech>>, TError,TranscribeSpeechMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof transcribeSpeech>>, TError,TranscribeSpeechMutationVariables, TContext> => {
+
+const mutationKey = getTranscribeSpeechMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof transcribeSpeech>>, TranscribeSpeechMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  transcribeSpeech(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TranscribeSpeechMutationResult = NonNullable<Awaited<ReturnType<typeof transcribeSpeech>>>
+    export type TranscribeSpeechMutationBody = BodyType<Blob>
+    export type TranscribeSpeechMutationError = ErrorType<void>
+    export type TranscribeSpeechMutationVariables = {data: BodyType<Blob>}
+
+    /**
+ * @summary Transcribe a student's recorded question
+ */
+export const useTranscribeSpeech = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transcribeSpeech>>, TError,TranscribeSpeechMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof transcribeSpeech>>,
+        TError,
+        TranscribeSpeechMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTranscribeSpeechMutationOptions(options));
     }
 
 export const getListClassroomsUrl = () => {
@@ -1719,5 +1903,472 @@ export const useRequestUploadUrl = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRequestUploadUrlMutationOptions(options));
+    }
+
+export const getListSourceChecksUrl = () => {
+
+
+
+
+  return `/api/source-checks`
+}
+
+/**
+ * @summary List the signed-in student's recent PDF source checks
+ */
+export const listSourceChecks = async ( options?: Parameters<typeof customFetch>[1]): Promise<SourceCheckHistory> => {
+
+  return customFetch<SourceCheckHistory>(getListSourceChecksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSourceChecksQueryKey = () => {
+    return [
+    `/api/source-checks`
+    ] as const;
+    }
+
+
+export const getListSourceChecksQueryOptions = <TData = Awaited<ReturnType<typeof listSourceChecks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSourceChecks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSourceChecksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSourceChecks>>> = ({ signal }) => listSourceChecks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSourceChecks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSourceChecksQueryResult = NonNullable<Awaited<ReturnType<typeof listSourceChecks>>>
+export type ListSourceChecksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the signed-in student's recent PDF source checks
+ */
+
+export function useListSourceChecks<TData = Awaited<ReturnType<typeof listSourceChecks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSourceChecks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSourceChecksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPdfActivityUrl = () => {
+
+
+
+
+  return `/api/pdf-activity`
+}
+
+/**
+ * @summary List the signed-in student's classroom PDFs and unexpired source checks
+ */
+export const listPdfActivity = async ( options?: Parameters<typeof customFetch>[1]): Promise<PdfActivityHistory> => {
+
+  return customFetch<PdfActivityHistory>(getListPdfActivityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPdfActivityQueryKey = () => {
+    return [
+    `/api/pdf-activity`
+    ] as const;
+    }
+
+
+export const getListPdfActivityQueryOptions = <TData = Awaited<ReturnType<typeof listPdfActivity>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPdfActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPdfActivityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPdfActivity>>> = ({ signal }) => listPdfActivity({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPdfActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPdfActivityQueryResult = NonNullable<Awaited<ReturnType<typeof listPdfActivity>>>
+export type ListPdfActivityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the signed-in student's classroom PDFs and unexpired source checks
+ */
+
+export function useListPdfActivity<TData = Awaited<ReturnType<typeof listPdfActivity>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPdfActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPdfActivityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestSourceCheckUploadUrl = () => {
+
+
+
+
+  return `/api/source-checks/uploads`
+}
+
+/**
+ * @summary Request an isolated private upload for an optional source check
+ */
+export const requestSourceCheckUpload = async (sourceCheckUploadInput: SourceCheckUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<SourceCheckUpload> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SourceCheckUpload>(getRequestSourceCheckUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(sourceCheckUploadInput)
+  }
+);}
+
+
+
+
+
+export const getRequestSourceCheckUploadMutationKey = () => ['requestSourceCheckUpload'] as const;
+
+export const getRequestSourceCheckUploadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestSourceCheckUpload>>, TError,RequestSourceCheckUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestSourceCheckUpload>>, TError,RequestSourceCheckUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestSourceCheckUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestSourceCheckUpload>>, RequestSourceCheckUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestSourceCheckUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestSourceCheckUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestSourceCheckUpload>>>
+    export type RequestSourceCheckUploadMutationBody = BodyType<SourceCheckUploadInput>
+    export type RequestSourceCheckUploadMutationError = ErrorType<unknown>
+    export type RequestSourceCheckUploadMutationVariables = {data: BodyType<SourceCheckUploadInput>}
+
+    /**
+ * @summary Request an isolated private upload for an optional source check
+ */
+export const useRequestSourceCheckUpload = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestSourceCheckUpload>>, TError,RequestSourceCheckUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestSourceCheckUpload>>,
+        TError,
+        RequestSourceCheckUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestSourceCheckUploadMutationOptions(options));
+    }
+
+export const getStartSourceCheckUrl = (checkId: string,) => {
+
+
+
+
+  return `/api/source-checks/${checkId}/start`
+}
+
+/**
+ * @summary Explicitly start the requested PDF source check
+ */
+export const startSourceCheck = async (checkId: string, options?: Parameters<typeof customFetch>[1]): Promise<SourceCheckStatus> => {
+
+  return customFetch<SourceCheckStatus>(getStartSourceCheckUrl(checkId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartSourceCheckMutationKey = () => ['startSourceCheck'] as const;
+
+export const getStartSourceCheckMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSourceCheck>>, TError,StartSourceCheckMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startSourceCheck>>, TError,StartSourceCheckMutationVariables, TContext> => {
+
+const mutationKey = getStartSourceCheckMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startSourceCheck>>, StartSourceCheckMutationVariables> = (props) => {
+          const {checkId} = props ?? {};
+
+          return  startSourceCheck(checkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartSourceCheckMutationResult = NonNullable<Awaited<ReturnType<typeof startSourceCheck>>>
+
+    export type StartSourceCheckMutationError = ErrorType<unknown>
+    export type StartSourceCheckMutationVariables = {checkId: string}
+
+    /**
+ * @summary Explicitly start the requested PDF source check
+ */
+export const useStartSourceCheck = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSourceCheck>>, TError,StartSourceCheckMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startSourceCheck>>,
+        TError,
+        StartSourceCheckMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartSourceCheckMutationOptions(options));
+    }
+
+export const getGetSourceCheckUrl = (checkId: string,) => {
+
+
+
+
+  return `/api/source-checks/${checkId}`
+}
+
+/**
+ * @summary Get the processing state or result of a source check
+ */
+export const getSourceCheck = async (checkId: string, options?: Parameters<typeof customFetch>[1]): Promise<SourceCheckStatus> => {
+
+  return customFetch<SourceCheckStatus>(getGetSourceCheckUrl(checkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSourceCheckQueryKey = (checkId: string,) => {
+    return [
+    `/api/source-checks/${checkId}`
+    ] as const;
+    }
+
+
+export const getGetSourceCheckQueryOptions = <TData = Awaited<ReturnType<typeof getSourceCheck>>, TError = ErrorType<unknown>>(checkId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSourceCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSourceCheckQueryKey(checkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSourceCheck>>> = ({ signal }) => getSourceCheck(checkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: checkId !== null && checkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSourceCheck>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSourceCheckQueryResult = NonNullable<Awaited<ReturnType<typeof getSourceCheck>>>
+export type GetSourceCheckQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the processing state or result of a source check
+ */
+
+export function useGetSourceCheck<TData = Awaited<ReturnType<typeof getSourceCheck>>, TError = ErrorType<unknown>>(
+ checkId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSourceCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSourceCheckQueryOptions(checkId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteSourceCheckUrl = (checkId: string,) => {
+
+
+
+
+  return `/api/source-checks/${checkId}`
+}
+
+/**
+ * @summary Delete a source check and its report
+ */
+export const deleteSourceCheck = async (checkId: string, options?: Parameters<typeof customFetch>[1]): Promise<MutationStatus> => {
+
+  return customFetch<MutationStatus>(getDeleteSourceCheckUrl(checkId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSourceCheckMutationKey = () => ['deleteSourceCheck'] as const;
+
+export const getDeleteSourceCheckMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSourceCheck>>, TError,DeleteSourceCheckMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSourceCheck>>, TError,DeleteSourceCheckMutationVariables, TContext> => {
+
+const mutationKey = getDeleteSourceCheckMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSourceCheck>>, DeleteSourceCheckMutationVariables> = (props) => {
+          const {checkId} = props ?? {};
+
+          return  deleteSourceCheck(checkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSourceCheckMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSourceCheck>>>
+
+    export type DeleteSourceCheckMutationError = ErrorType<unknown>
+    export type DeleteSourceCheckMutationVariables = {checkId: string}
+
+    /**
+ * @summary Delete a source check and its report
+ */
+export const useDeleteSourceCheck = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSourceCheck>>, TError,DeleteSourceCheckMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSourceCheck>>,
+        TError,
+        DeleteSourceCheckMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteSourceCheckMutationOptions(options));
     }
 

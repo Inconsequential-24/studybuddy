@@ -4,3 +4,5 @@
 - [Learning generation concurrency](learning-generation-concurrency.md) — overlapping AI requests must return canonical persisted results and preserve newer state.
 - [PDF ingestion durability](pdf-ingestion-durability.md) — retries preserve verified evidence; cancellation precedes cleanup; in-flight external billing cannot be exactly-once.
 - [Signed-in browser testing](signed-in-browser-testing.md) — runner Clerk claims overrides are context-bound; exported cookies alone do not reproduce them.
+- [StudyBuddy speech providers](speech-providers.md) — Groq handles speech input; browser voices provide read-aloud without a paid TTS endpoint.
+- [StudyBuddy visual direction](studybuddy-visual-direction.md) — Keep the interface simple and professional; loading motion must respect reduced-motion settings.

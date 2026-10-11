@@ -1,0 +1,58 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Iq9YsfthsURSTTm0lI84U"
+uri = "file://exports/studybuddy-codebase.zip"
+type = "unspecified"
+title = "Codebase, assets & build files"
+description = "Download 1 of 4. Extract all four ZIPs into the same folder."
+logical_id = "14552db2-2dd4-451a-859f-da39ecfdef0f"
+content_hash = "sha256:9961687f87d8161c2926cd10e55f415b124dbff7a14f18016189918952dbb6bd"
+size = 60181874
+mtime_ms = 1791544641945
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:36b15889-1a14-48e6-9e6b-7a376d94f791/14552db2-2dd4-451a-859f-da39ecfdef0f/04f3a0cd-8c04-4593-b7f6-baa09a8c9404"
+storage_version_token = "1791544699999517"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "c27EqBhGJycvW_c8Vf1Z-"
+uri = "file://exports/studybuddy-dependencies-1.zip"
+type = "unspecified"
+title = "Installed dependencies — part 1"
+description = "Download 2 of 4. Extract into the same folder as the codebase."
+logical_id = "f4a4c412-5a48-4866-a986-1516dd09cbf4"
+content_hash = "sha256:6e3a8f11c1dc531f6bf2800657abf813e7d02ec7339486fd993b74ead62802e9"
+size = 99850707
+mtime_ms = 1791544658353
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:36b15889-1a14-48e6-9e6b-7a376d94f791/f4a4c412-5a48-4866-a986-1516dd09cbf4/b626f1df-a16f-4636-8eb7-2f83909417cc"
+storage_version_token = "1791544702352105"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "c8PjSivt3YdE2X8QaLib6"
+uri = "file://exports/studybuddy-dependencies-2.zip"
+type = "unspecified"
+title = "Installed dependencies — part 2"
+description = "Download 3 of 4. Extract into the same folder as the codebase."
+logical_id = "c041c4aa-fb49-4994-9211-9fb3a3fd06f2"
+content_hash = "sha256:103f140c0ee49aad44cbc78b3e11f3efcfc89ccc49f74b153f3b119f6762ad35"
+size = 91234248
+mtime_ms = 1791544677997
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:36b15889-1a14-48e6-9e6b-7a376d94f791/c041c4aa-fb49-4994-9211-9fb3a3fd06f2/abdcfa45-81ad-4ca1-98a7-1b442c6170cd"
+storage_version_token = "1791544704440392"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "2rAyicnw3Rq_RyE09g0Ob"
+uri = "file://exports/studybuddy-dependencies-3.zip"
+type = "unspecified"
+title = "Installed dependencies — part 3"
+description = "Download 4 of 4. Extract into the same folder as the codebase."
+logical_id = "d920199a-5c81-4ef2-9386-13d355338808"
+content_hash = "sha256:ea7bd05d4333a1656c6e23ee8516fc2f776579938ed87e93893cf5271bef9f7d"
+size = 35251851
+mtime_ms = 1791544686869
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:36b15889-1a14-48e6-9e6b-7a376d94f791/d920199a-5c81-4ef2-9386-13d355338808/e487d94f-dcbf-407c-b2c2-c506e56bbc79"
+storage_version_token = "1791544706082664"
+content_type = "application/octet-stream"

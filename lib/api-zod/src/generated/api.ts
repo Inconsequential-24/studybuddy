@@ -31,6 +31,8 @@ export const GetProfileResponse = zod.object({
   "accessibilityNeeds": zod.string(),
   "confidence": zod.enum(['starting-out', 'building', 'confident']),
   "interests": zod.string(),
+  "learningLanguage": zod.enum(['en-US', 'hi-IN', 'bn-IN', 'es-ES', 'fr-FR', 'de-DE', 'pt-BR', 'ja-JP', 'ar-XA']),
+  "interestTerminology": zod.boolean(),
   "completed": zod.boolean()
 })
 
@@ -54,7 +56,9 @@ export const UpdateProfileBody = zod.object({
   "vocabularySupport": zod.boolean(),
   "accessibilityNeeds": zod.string(),
   "confidence": zod.enum(['starting-out', 'building', 'confident']),
-  "interests": zod.string()
+  "interests": zod.string(),
+  "learningLanguage": zod.enum(['en-US', 'hi-IN', 'bn-IN', 'es-ES', 'fr-FR', 'de-DE', 'pt-BR', 'ja-JP', 'ar-XA']),
+  "interestTerminology": zod.boolean()
 })
 
 export const UpdateProfileResponse = zod.object({
@@ -68,7 +72,35 @@ export const UpdateProfileResponse = zod.object({
   "accessibilityNeeds": zod.string(),
   "confidence": zod.enum(['starting-out', 'building', 'confident']),
   "interests": zod.string(),
+  "learningLanguage": zod.enum(['en-US', 'hi-IN', 'bn-IN', 'es-ES', 'fr-FR', 'de-DE', 'pt-BR', 'ja-JP', 'ar-XA']),
+  "interestTerminology": zod.boolean(),
   "completed": zod.boolean()
+})
+
+
+/**
+ * @summary Synthesize spoken learning content
+ */
+export const synthesizeSpeechBodyTextMax = 4500;
+
+
+
+export const SynthesizeSpeechBody = zod.object({
+  "text": zod.string().min(1).max(synthesizeSpeechBodyTextMax),
+  "language": zod.enum(['en-US', 'hi-IN', 'bn-IN', 'es-ES', 'fr-FR', 'de-DE', 'pt-BR', 'ja-JP', 'ar-XA'])
+})
+
+export const SynthesizeSpeechResponse = zod.object({
+  "audioContent": zod.string().describe('Base64-encoded audio returned by the Meta MMS endpoint'),
+  "audioMimeType": zod.enum(['audio/wav', 'audio/mpeg'])
+})
+
+
+/**
+ * @summary Transcribe a student's recorded question
+ */
+export const TranscribeSpeechResponse = zod.object({
+  "text": zod.string().describe('Transcribed spoken words')
 })
 
 
@@ -124,7 +156,8 @@ export const CreateClassroomResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "pageCount": zod.number().int(),
-  "objectPath": zod.string()
+  "objectPath": zod.string(),
+  "currentStages": zod.array(zod.enum(['extracting-text', 'rendering-page', 'mapping-page', 'checking-citations'])).optional()
 })),
   "concepts": zod.array(zod.object({
   "id": zod.string(),
@@ -196,7 +229,8 @@ export const GetClassroomResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "pageCount": zod.number().int(),
-  "objectPath": zod.string()
+  "objectPath": zod.string(),
+  "currentStages": zod.array(zod.enum(['extracting-text', 'rendering-page', 'mapping-page', 'checking-citations'])).optional()
 })),
   "concepts": zod.array(zod.object({
   "id": zod.string(),
@@ -280,7 +314,8 @@ export const VerifyClassroomPagesResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "pageCount": zod.number().int(),
-  "objectPath": zod.string()
+  "objectPath": zod.string(),
+  "currentStages": zod.array(zod.enum(['extracting-text', 'rendering-page', 'mapping-page', 'checking-citations'])).optional()
 })),
   "concepts": zod.array(zod.object({
   "id": zod.string(),
@@ -352,7 +387,8 @@ export const RetryFailedPagesResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "pageCount": zod.number().int(),
-  "objectPath": zod.string()
+  "objectPath": zod.string(),
+  "currentStages": zod.array(zod.enum(['extracting-text', 'rendering-page', 'mapping-page', 'checking-citations'])).optional()
 })),
   "concepts": zod.array(zod.object({
   "id": zod.string(),
@@ -818,6 +854,176 @@ export const RequestUploadUrlBody = zod.object({
 export const RequestUploadUrlResponse = zod.object({
   "uploadURL": zod.string().url(),
   "objectPath": zod.string()
+})
+
+
+/**
+ * @summary List the signed-in student's recent PDF source checks
+ */
+export const listSourceChecksResponseTotalCountMin = 0;
+
+
+
+export const ListSourceChecksResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "fileName": zod.string(),
+  "mode": zod.enum(['skim', 'thorough']),
+  "status": zod.enum(['uploading', 'processing', 'complete', 'failed']),
+  "stage": zod.union([zod.enum(['validating-pdf', 'extracting-text', 'rendering-pages', 'comparing-claims', 'validating-findings']),zod.null()]),
+  "failure": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date()
+})),
+  "totalCount": zod.number().int().min(listSourceChecksResponseTotalCountMin)
+})
+
+
+/**
+ * @summary List the signed-in student's classroom PDFs and unexpired source checks
+ */
+export const listPdfActivityResponseTotalCountMin = 0;
+
+
+
+export const ListPdfActivityResponse = zod.object({
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.enum(['source-check']),
+  "id": zod.string(),
+  "fileName": zod.string(),
+  "mode": zod.enum(['skim', 'thorough']),
+  "status": zod.enum(['uploading', 'processing', 'complete', 'failed']),
+  "stage": zod.union([zod.enum(['validating-pdf', 'extracting-text', 'rendering-pages', 'comparing-claims', 'validating-findings']),zod.null()]),
+  "failure": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date()
+}),zod.object({
+  "kind": zod.enum(['classroom-pdf']),
+  "id": zod.string(),
+  "classroomId": zod.string(),
+  "classroomName": zod.string(),
+  "fileName": zod.string(),
+  "status": zod.enum(['processing', 'ready', 'needs-attention']),
+  "currentStages": zod.array(zod.enum(['extracting-text', 'rendering-page', 'mapping-page', 'checking-citations'])),
+  "createdAt": zod.coerce.date()
+})])),
+  "totalCount": zod.number().int().min(listPdfActivityResponseTotalCountMin)
+})
+
+
+/**
+ * @summary Request an isolated private upload for an optional source check
+ */
+export const requestSourceCheckUploadBodyNameMax = 255;
+
+export const requestSourceCheckUploadBodySizeMax = 26214400;
+
+
+
+export const RequestSourceCheckUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestSourceCheckUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestSourceCheckUploadBodySizeMax),
+  "mode": zod.enum(['skim', 'thorough'])
+})
+
+export const RequestSourceCheckUploadResponse = zod.object({
+  "id": zod.string(),
+  "uploadURL": zod.string().url(),
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Explicitly start the requested PDF source check
+ */
+export const StartSourceCheckParams = zod.object({
+  "checkId": zod.coerce.string()
+})
+
+export const startSourceCheckResponseReportOneReviewedPagesMin = 0;
+
+export const startSourceCheckResponseReportOneTotalPagesMin = 0;
+
+
+
+
+export const StartSourceCheckResponse = zod.object({
+  "id": zod.string(),
+  "mode": zod.enum(['skim', 'thorough']),
+  "status": zod.enum(['uploading', 'processing', 'complete', 'failed']),
+  "stage": zod.union([zod.enum(['validating-pdf', 'extracting-text', 'rendering-pages', 'comparing-claims', 'validating-findings']),zod.null()]),
+  "report": zod.union([zod.object({
+  "mode": zod.enum(['skim', 'thorough']),
+  "limitations": zod.string(),
+  "reviewedPages": zod.number().int().min(startSourceCheckResponseReportOneReviewedPagesMin),
+  "totalPages": zod.number().int().min(startSourceCheckResponseReportOneTotalPagesMin),
+  "findings": zod.array(zod.object({
+  "page": zod.number().int().min(1),
+  "evidenceKind": zod.enum(['text', 'figure', 'table']),
+  "sourceId": zod.string().nullish(),
+  "pdfQuote": zod.string(),
+  "status": zod.enum(['confirmed-conflict', 'possible-conflict']),
+  "explanation": zod.string(),
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string().url()
+})),
+  "uncheckedClaims": zod.array(zod.string())
+}),zod.null()]),
+  "failure": zod.string().nullable(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the processing state or result of a source check
+ */
+export const GetSourceCheckParams = zod.object({
+  "checkId": zod.coerce.string()
+})
+
+export const getSourceCheckResponseReportOneReviewedPagesMin = 0;
+
+export const getSourceCheckResponseReportOneTotalPagesMin = 0;
+
+
+
+
+export const GetSourceCheckResponse = zod.object({
+  "id": zod.string(),
+  "mode": zod.enum(['skim', 'thorough']),
+  "status": zod.enum(['uploading', 'processing', 'complete', 'failed']),
+  "stage": zod.union([zod.enum(['validating-pdf', 'extracting-text', 'rendering-pages', 'comparing-claims', 'validating-findings']),zod.null()]),
+  "report": zod.union([zod.object({
+  "mode": zod.enum(['skim', 'thorough']),
+  "limitations": zod.string(),
+  "reviewedPages": zod.number().int().min(getSourceCheckResponseReportOneReviewedPagesMin),
+  "totalPages": zod.number().int().min(getSourceCheckResponseReportOneTotalPagesMin),
+  "findings": zod.array(zod.object({
+  "page": zod.number().int().min(1),
+  "evidenceKind": zod.enum(['text', 'figure', 'table']),
+  "sourceId": zod.string().nullish(),
+  "pdfQuote": zod.string(),
+  "status": zod.enum(['confirmed-conflict', 'possible-conflict']),
+  "explanation": zod.string(),
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string().url()
+})),
+  "uncheckedClaims": zod.array(zod.string())
+}),zod.null()]),
+  "failure": zod.string().nullable(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a source check and its report
+ */
+export const DeleteSourceCheckParams = zod.object({
+  "checkId": zod.coerce.string()
+})
+
+export const DeleteSourceCheckResponse = zod.object({
+  "success": zod.boolean()
 })
 
 

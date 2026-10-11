@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startIngestionWorker } from "./lib/tutor-ingestion";
 import { isLocalAuth } from "./lib/localAuth";
+import { cleanupExpiredSourceChecks, resumeSourceChecks } from "./routes/source-checks";
 
 const rawPort = process.env["PORT"];
 
@@ -18,14 +19,35 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 // Local auth has no sign-in, so only accept connections from this machine.
-const host = isLocalAuth() ? "127.0.0.1" : "0.0.0.0";
+// Bind both loopback addresses: browsers often open "localhost" as IPv6 (::1).
+const hosts = isLocalAuth() ? ["127.0.0.1", "::1"] : ["0.0.0.0"];
+let started = false;
 
-app.listen(port, host, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
-
-  logger.info({ port, host, localAuth: isLocalAuth() }, "Server listening");
+function startBackgroundWork() {
+  if (started) return;
+  started = true;
   startIngestionWorker();
-});
+  resumeSourceChecks();
+  const cleanupSourceChecks = () => {
+    void cleanupExpiredSourceChecks().catch((err) => logger.warn({ err }, "Source-check cleanup pass failed"));
+  };
+  cleanupSourceChecks();
+  const cleanupInterval = setInterval(cleanupSourceChecks, 60 * 60 * 1000);
+  cleanupInterval.unref();
+}
+
+for (const [index, host] of hosts.entries()) {
+  const required = index === 0;
+  const server = app.listen(port, host, () => {
+    logger.info({ port, host, localAuth: isLocalAuth() }, "Server listening");
+    startBackgroundWork();
+  });
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (!required && (err.code === "EADDRINUSE" || err.code === "EAFNOSUPPORT" || err.code === "EINVAL")) {
+      logger.warn({ err, host }, "Optional localhost listen failed");
+      return;
+    }
+    logger.error({ err, host }, "Error listening on port");
+    process.exit(1);
+  });
+}

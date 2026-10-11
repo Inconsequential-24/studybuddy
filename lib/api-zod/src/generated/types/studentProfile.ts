@@ -7,6 +7,7 @@
  */
 import type { StudentProfileConfidence } from './studentProfileConfidence';
 import type { StudentProfileExplanationStyle } from './studentProfileExplanationStyle';
+import type { StudentProfileLearningLanguage } from './studentProfileLearningLanguage';
 import type { StudentProfilePace } from './studentProfilePace';
 
 export interface StudentProfile {
@@ -20,5 +21,7 @@ export interface StudentProfile {
   accessibilityNeeds: string;
   confidence: StudentProfileConfidence;
   interests: string;
+  learningLanguage: StudentProfileLearningLanguage;
+  interestTerminology: boolean;
   completed: boolean;
 }

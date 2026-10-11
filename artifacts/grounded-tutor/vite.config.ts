@@ -1,7 +1,39 @@
+import http from 'node:http';
 import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+
+// Browsers open "localhost" as either 127.0.0.1 or ::1. Vite binds only one of
+// them, so the other gets ERR_CONNECTION_REFUSED. Stay on loopback, not the LAN.
+function loopbackTwin(listenPort: number): Plugin {
+  return {
+    name: 'loopback-twin',
+    apply: 'serve',
+    configureServer(server) {
+      if (process.env.VITE_AUTH_DRIVER !== 'local') return;
+      return () => {
+        const primary = server.httpServer;
+        if (!primary) return;
+        primary.once('listening', () => {
+          const bound = primary.address();
+          if (!bound || typeof bound === 'string') return;
+          const other = bound.address === '127.0.0.1' ? '::1' : '127.0.0.1';
+          const extra = http.createServer();
+          for (const event of ['request', 'upgrade'] as const) {
+            for (const listener of primary.listeners(event)) {
+              extra.on(event, listener as (...args: unknown[]) => void);
+            }
+          }
+          extra.on('error', (err) => {
+            server.config.logger.warn(`Local ${other} listen failed: ${err.message}`);
+          });
+          extra.listen(listenPort, other);
+        });
+      };
+    },
+  };
+}
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
@@ -33,6 +65,7 @@ export default defineConfig({
     react(),
     tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),
+    loopbackTwin(port),
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined
       ? [

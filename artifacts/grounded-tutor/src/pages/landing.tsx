@@ -14,11 +14,12 @@ export default function Landing() {
   return (
     <div className="min-h-[100dvh]">
       <SkipLink />
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
+      <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 sm:px-6">
         <Logo />
         <nav aria-label="Account" className="flex items-center gap-2">
-          <Button asChild variant="ghost"><Link href="/sign-in">Sign in</Link></Button>
-          <Button asChild><Link href="/sign-up">Create account</Link></Button>
+          <Button asChild variant="ghost" data-testid="link-landing-getting-started"><Link href="/getting-started">Getting started</Link></Button>
+          <Button asChild variant="ghost" data-testid="link-landing-sign-in"><Link href="/sign-in">Sign in</Link></Button>
+          <Button asChild data-testid="link-landing-sign-up"><Link href="/sign-up">Create account</Link></Button>
         </nav>
       </header>
       <main id="main" tabIndex={-1} className="outline-none">

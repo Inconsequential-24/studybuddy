@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.retry-tests.json",
     "test:ingestion": "node --import tsx --test tests/tutor-ingestion.test.ts tests/tutor-model-output.test.ts",
     "test:storage": "node --import tsx --test tests/local-object-storage.test.ts",
+    "test:speech": "node --import tsx --test tests/mms-tts.test.ts tests/groq-stt.test.ts",
     "test:retry-browser": "playwright test --config playwright.retry.config.ts"
   },
   "dependencies": {

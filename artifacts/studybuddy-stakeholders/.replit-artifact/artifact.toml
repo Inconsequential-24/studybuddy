@@ -1,0 +1,28 @@
+kind = "slides"
+previewPath = "/studybuddy-stakeholders/"
+title = "StudyBuddy — Stakeholder Overview"
+description = "An 18-slide professional presentation explaining StudyBuddy's PDF-grounded learning experience, accessibility, source verification, limitations, and proposed pilot."
+version = "1.0.0"
+id = "artifacts/studybuddy-stakeholders"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/studybuddy-stakeholders/" ]
+localPort = 18128
+
+[services.development]
+run = "pnpm --filter @workspace/studybuddy-stakeholders run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/studybuddy-stakeholders", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/studybuddy-stakeholders/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18128"
+BASE_PATH = "/studybuddy-stakeholders/"

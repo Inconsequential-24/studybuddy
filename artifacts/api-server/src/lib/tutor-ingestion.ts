@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { db, pool, tutorClassrooms, tutorPageJobs, type TutorPageJob } from "@workspace/db";
 import { ObjectStorageService } from "./objectStorage";
-import { mapPdfPage, PageAnalysisError } from "./tutor-ai";
+import { mapPdfPage, PageAnalysisError, type MappingStage } from "./tutor-ai";
 import { isRateLimitError } from "@workspace/integrations-gemini-ai/batch";
 import { logger } from "./logger";
 import type { Concept, Room, SourcePage } from "./tutor-types";
@@ -71,8 +71,10 @@ export async function retryFailedPages(classroomId: string) {
   return db.transaction(async (tx) => {
     const [row] = await tx.select().from(tutorClassrooms).where(eq(tutorClassrooms.id, classroomId)).for("update");
     if (!row) return;
-    await tx.update(tutorPageJobs).set({ status: "pending", attempts: 0, failure: null, nextAttemptAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(tutorPageJobs.classroomId, classroomId), eq(tutorPageJobs.status, "failed")));
+    const retried = await tx.update(tutorPageJobs).set({ status: "pending", attempts: 0, failure: null, nextAttemptAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(tutorPageJobs.classroomId, classroomId), eq(tutorPageJobs.status, "failed")))
+      .returning({ id: tutorPageJobs.id });
+    if (retried.length === 0) return;
     return project(tx, classroomId);
   });
 }
@@ -95,15 +97,36 @@ function failureReason(error: unknown): Failure {
 
 const classroomExists = async (id: string) => (await db.select({ id: tutorClassrooms.id }).from(tutorClassrooms).where(eq(tutorClassrooms.id, id))).length > 0;
 
-export type PageProcessor = (job: TutorPageJob, room: Room, signal: AbortSignal, canContinue: () => Promise<boolean>) => Promise<PageResult>;
-const processPage: PageProcessor = async (job, room, signal, canContinue) => {
+export type PageProcessor = (
+  job: TutorPageJob,
+  room: Room,
+  signal: AbortSignal,
+  canContinue: () => Promise<boolean>,
+  onStage: (stage: "extracting-text" | MappingStage) => Promise<void>,
+) => Promise<PageResult>;
+const processPage: PageProcessor = async (job, room, signal, canContinue, onStage) => {
   const document = room.documents.find((d) => d.id === job.documentId);
   if (!document) throw new PageAnalysisError("missing_document", "The page's source document is missing.");
   const file = await storage.getObjectEntityFile(document.objectPath);
   const [bytes] = await file.download();
   signal.throwIfAborted();
-  return mapPdfPage(bytes, job.documentId, job.localPage, job.page, signal, canContinue);
+  await onStage("extracting-text");
+  return mapPdfPage(bytes, job.documentId, job.localPage, job.page, signal, canContinue, onStage);
 };
+
+export async function getClassroomDocumentStages(classroomId: string): Promise<Map<string, string[]>> {
+  const jobs = await db.select({ documentId: tutorPageJobs.documentId, stage: tutorPageJobs.stage })
+    .from(tutorPageJobs)
+    .where(and(eq(tutorPageJobs.classroomId, classroomId), eq(tutorPageJobs.status, "processing")));
+  const stages = new Map<string, Set<string>>();
+  for (const job of jobs) {
+    if (!job.stage) continue;
+    const documentStages = stages.get(job.documentId) ?? new Set<string>();
+    documentStages.add(job.stage);
+    stages.set(job.documentId, documentStages);
+  }
+  return new Map([...stages].map(([documentId, values]) => [documentId, [...values]]));
+}
 
 // Export a single drain pass for deterministic integration tests; normal startup
 // calls it periodically. All mutations remain database-backed even in tests.
@@ -140,6 +163,7 @@ export async function runIngestionPass(processor: PageProcessor = processPage, o
         if (!room) return;
         await tx.update(tutorPageJobs).set({
           status: job.attempts >= MAX_ATTEMPTS ? "failed" : "pending",
+          stage: null,
           failure: { code: "interrupted", message: "Analysis was interrupted by a server restart." },
           nextAttemptAt: new Date(), updatedAt: new Date(),
         }).where(eq(tutorPageJobs.id, job.id));
@@ -153,7 +177,7 @@ export async function runIngestionPass(processor: PageProcessor = processPage, o
         const [row] = await tx.select().from(tutorClassrooms).where(eq(tutorClassrooms.id, candidate.classroomId)).for("update");
         if (!row) return;
         const [job] = await tx.update(tutorPageJobs).set({
-          status: "processing", attempts: sql`${tutorPageJobs.attempts} + 1`,
+          status: "processing", stage: null, attempts: sql`${tutorPageJobs.attempts} + 1`,
           totalAttempts: sql`${tutorPageJobs.totalAttempts} + 1`, updatedAt: new Date(),
         }).where(and(eq(tutorPageJobs.id, candidate.id), eq(tutorPageJobs.status, "pending"))).returning();
         if (!job) return;
@@ -173,12 +197,25 @@ export async function runIngestionPass(processor: PageProcessor = processPage, o
         if (sessionLost) controller.abort();
         controller.signal.throwIfAborted();
         if (!await classroomExists(room.id)) continue;
-        const result = await processor(job, room, controller.signal, async () => !sessionLost && await classroomExists(room.id));
+        const result = await processor(
+          job,
+          room,
+          controller.signal,
+          async () => !sessionLost && await classroomExists(room.id),
+          async (stage) => {
+            await db.update(tutorPageJobs).set({ stage, updatedAt: new Date() })
+              .where(and(
+                eq(tutorPageJobs.id, job.id),
+                eq(tutorPageJobs.status, "processing"),
+                eq(tutorPageJobs.totalAttempts, job.totalAttempts),
+              ));
+          },
+        );
         controller.signal.throwIfAborted();
         await db.transaction(async (tx) => {
           const [current] = await tx.select().from(tutorClassrooms).where(eq(tutorClassrooms.id, room.id)).for("update");
           if (!current) return;
-          const saved = await tx.update(tutorPageJobs).set({ status: "succeeded", result, failure: null, updatedAt: new Date() })
+          const saved = await tx.update(tutorPageJobs).set({ status: "succeeded", stage: null, result, failure: null, updatedAt: new Date() })
             .where(and(eq(tutorPageJobs.id, job.id), eq(tutorPageJobs.status, "processing"), eq(tutorPageJobs.totalAttempts, job.totalAttempts))).returning({ id: tutorPageJobs.id });
           if (saved.length) await project(tx, room.id);
         });
@@ -197,6 +234,7 @@ export async function runIngestionPass(processor: PageProcessor = processPage, o
           if (!current) return;
           const saved = await tx.update(tutorPageJobs).set({
             status: job.attempts >= MAX_ATTEMPTS ? "failed" : "pending",
+            stage: null,
             failure, nextAttemptAt: retryAt, updatedAt: new Date(),
           }).where(and(eq(tutorPageJobs.id, job.id), eq(tutorPageJobs.status, "processing"), eq(tutorPageJobs.totalAttempts, job.totalAttempts))).returning({ id: tutorPageJobs.id });
           if (saved.length) await project(tx, room.id);

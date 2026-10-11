@@ -1,0 +1,23 @@
+I want to make https://replit.com/@juhidwivedi01/Grounded-Tutor more accessible. Add text to speech using Google's api, make it multi lingual. Add settings for neurodivergent people.
+
+Add a bright/dark/pink and accessible mode (Put a heart there)
+
+Accessible websites for neurodivergent individuals—such as those with autism, ADHD, or dyslexia—focus on cognitive accessibility, low sensory load, and predictable navigation. https://adchitects.co/blog/design-for-neurodiversity for people using the accessible mode ask for input of the help they might need.
+
+Add a cool effect.
+
+Add an option for demo- create a navigation like upload a new pdf- here, adaptive assessment,- learn in the language you enjoy (both in terms of language as in eng french hindi, etc and terminology inspered by your interests)- for new users- back to basics we only teach what you upload. Add user guide option in settings or profile?
+
+Also add an option to 'Verify Your Source' - that should open to a new webpage and it should go like - upload your study material here and check if the information is factually correct or not. This is completely optional and should NOT be a part of our pipeline. Just an additional feature if someone wants to verify the pdf they are uploading.
+
+Insert a flash api or anything light weight to quicky check if the source has nothing to be flagged. We can even put modes there- 1 be skimmy through it low effort- just quick cross check the text and whatever- 2- be thorough- use pro api and carefully evaluate the pdf along with diagrams, tables and use websources. Flag any discrepencies and cite the source where there appears to be a conflict- as in the pdf it shows photosythesis produices co2 so flag that- and link the lines it mentions this and then give the link of the web source (use verified information only) that this is the correct information.
+
+Add a feedback option- feedbacks should be mailed to- juhidwivedi73@gmail.com.
+
+Add an option for Github- saying check out the source code here, and contribute! Would appreciate your inputs.- https://github.com/Inconsequential-24/studybuddy
+
+Add social account linkedin there- https://www.linkedin.com/in/juhi-dwivedi/
+
+Twitter- https://x.com/JuhiDwivedi24
+
+Mail- mailto:dwivedijuhi01@gmail.com

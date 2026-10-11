@@ -22,6 +22,9 @@ import Teach from '@/pages/teach';
 import Practice from '@/pages/practice';
 import Exam from '@/pages/exam';
 import Dashboard from '@/pages/dashboard';
+import Home from '@/pages/home';
+import VerifySource from '@/pages/verify-source';
+import GettingStarted from '@/pages/getting-started';
 import { isConnectionError, retryReadRequest } from '@/lib/connection';
 import { LOCAL_AUTH, SignedIn, SignedOut } from '@/lib/auth';
 
@@ -48,28 +51,34 @@ const clerkAppearance = {
   cssLayerName: 'clerk',
   options: { logoPlacement: 'inside' as const, logoLinkUrl: basePath || '/', logoImageUrl: window.location.origin + basePath + '/logo.svg' },
   variables: {
-    colorPrimary: '#0d4450', colorForeground: '#10222a', colorMutedForeground: '#3f545c', colorDanger: '#a3321f',
-    colorBackground: '#fdfaf3', colorInput: '#ffffff', colorInputForeground: '#10222a', colorNeutral: '#10222a',
+    colorPrimary: 'hsl(var(--primary))',
+    colorForeground: 'hsl(var(--foreground))',
+    colorMutedForeground: 'hsl(var(--muted-foreground))',
+    colorDanger: 'hsl(var(--destructive))',
+    colorBackground: 'hsl(var(--card))',
+    colorInput: 'hsl(var(--background))',
+    colorInputForeground: 'hsl(var(--foreground))',
+    colorNeutral: 'hsl(var(--foreground))',
     fontFamily: "'Atkinson Hyperlegible', system-ui, sans-serif", borderRadius: '0.5rem',
   },
   elements: {
     rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-[#fdfaf3] border border-[#d9d1bd] rounded-xl w-[440px] max-w-full overflow-hidden',
+    cardBox: 'bg-card text-card-foreground border border-card-border rounded-xl w-[440px] max-w-full overflow-hidden',
     card: '!shadow-none !border-0 !bg-transparent !rounded-none',
     footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    headerTitle: 'text-[#10222a] font-semibold',
-    headerSubtitle: 'text-[#3f545c]',
-    socialButtonsBlockButtonText: 'text-[#10222a] font-semibold',
-    formFieldLabel: 'text-[#10222a] font-semibold',
-    footerActionLink: 'text-[#0d4450] font-semibold underline',
-    footerActionText: 'text-[#3f545c]',
-    dividerText: 'text-[#3f545c]',
-    identityPreviewEditButton: 'text-[#0d4450]',
-    formFieldSuccessText: 'text-[#0d4450]',
-    alertText: 'text-[#a3321f]',
-    formButtonPrimary: 'bg-[#0d4450] hover:bg-[#093540] text-white',
-    formFieldInput: 'border-[#5c6f77]',
-    socialButtonsBlockButton: 'border-[#5c6f77]',
+    headerTitle: 'text-card-foreground font-semibold',
+    headerSubtitle: 'text-muted-foreground',
+    socialButtonsBlockButtonText: 'text-foreground font-semibold',
+    formFieldLabel: 'text-foreground font-semibold',
+    footerActionLink: 'text-primary font-semibold underline',
+    footerActionText: 'text-muted-foreground',
+    dividerText: 'text-muted-foreground',
+    identityPreviewEditButton: 'text-primary',
+    formFieldSuccessText: 'text-primary',
+    alertText: 'text-destructive',
+    formButtonPrimary: 'bg-primary text-primary-foreground',
+    formFieldInput: 'border-input bg-background text-foreground',
+    socialButtonsBlockButton: 'border-input text-foreground',
   },
 };
 
@@ -91,7 +100,7 @@ function ClerkQueryClientCacheInvalidator() {
 function HomeRedirect() {
   return (
     <>
-      <SignedIn><Redirect to="/classrooms" /></SignedIn>
+      <SignedIn><Redirect to="/home" /></SignedIn>
       <SignedOut><Landing /></SignedOut>
     </>
   );
@@ -117,6 +126,7 @@ function protectedRoute(Page: ComponentType, needsProfile = true) {
 }
 
 const POnboarding = protectedRoute(Onboarding, false);
+const PHome = protectedRoute(Home);
 const PSettings = protectedRoute(Settings, false);
 const PClassrooms = protectedRoute(Classrooms);
 const PNew = protectedRoute(ClassroomNew, false);
@@ -125,6 +135,11 @@ const PTeach = protectedRoute(Teach);
 const PPractice = protectedRoute(Practice);
 const PExam = protectedRoute(Exam);
 const PDash = protectedRoute(Dashboard);
+const PVerifySource = protectedRoute(VerifySource, false);
+
+function ToHome() {
+  return <Redirect to="/home" />;
+}
 
 function AppRoutes() {
   const [location] = useLocation();
@@ -134,10 +149,13 @@ function AppRoutes() {
       <ErrorBoundary resetKey={location}>
         <Switch>
           <Route path="/" component={HomeRedirect} />
-          <Route path="/sign-in/*?" component={LOCAL_AUTH ? ToClassrooms : SignInPage} />
-          <Route path="/sign-up/*?" component={LOCAL_AUTH ? ToClassrooms : SignUpPage} />
+          <Route path="/sign-in/*?" component={LOCAL_AUTH ? ToHome : SignInPage} />
+          <Route path="/sign-up/*?" component={LOCAL_AUTH ? ToHome : SignUpPage} />
+          <Route path="/getting-started" component={GettingStarted} />
           <Route path="/onboarding" component={POnboarding} />
+          <Route path="/home" component={PHome} />
           <Route path="/settings" component={PSettings} />
+          <Route path="/verify-source" component={PVerifySource} />
           <Route path="/classrooms" component={PClassrooms} />
           <Route path="/classrooms/new" component={PNew} />
           <Route path="/classrooms/:id" component={POverview} />
@@ -150,10 +168,6 @@ function AppRoutes() {
       </ErrorBoundary>
     </QueryClientProvider>
   );
-}
-
-function ToClassrooms() {
-  return <Redirect to="/classrooms" />;
 }
 
 function ClerkProviderWithRoutes() {

@@ -2,7 +2,22 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { ai } from "@workspace/integrations-gemini-ai";
-import { mapPdfPage, validateReferences } from "../src/lib/tutor-ai";
+import { context, mapPdfPage, validateReferences } from "../src/lib/tutor-ai";
+
+test("learning language and optional interest analogies do not loosen classroom grounding", () => {
+  const profile = {
+    id: "student", gradeLevel: "Year 10", goal: "Biology", explanationStyle: "step-by-step",
+    pace: "steady", sessionMinutes: 20, vocabularySupport: false, accessibilityNeeds: "",
+    confidence: "building", interests: "football", learningLanguage: "hi-IN",
+    interestTerminology: true, completed: true,
+  };
+  const prompt = context([{ page: 1, documentId: "doc", localPage: 1, text: "Verified source evidence.", figures: [], tables: [] }], profile);
+  assert.match(prompt, /Write all learner-facing generated prose in hi-IN/);
+  assert.match(prompt, /use their interests only as analogies for presentation, never as evidence/);
+  assert.match(prompt, /Preserve source quotations, labels, citation payloads.*do not translate/);
+  assert.match(prompt, /Never use outside knowledge, tools or web search/);
+  assert.match(prompt, /Every factual output or question MUST have citations/);
+});
 
 test("Pro mapping requires citation quotes and repairs a malformed response without weakening verification", async () => {
   const pdf = await PDFDocument.create();

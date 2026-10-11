@@ -37,6 +37,7 @@ export const tutorPageJobs = pgTable("tutor_page_jobs", {
   localPage: integer("local_page").notNull(),
   page: integer("page").notNull(),
   status: text("status").notNull().default("pending"),
+  stage: text("stage"),
   attempts: integer("attempts").notNull().default(0),
   totalAttempts: integer("total_attempts").notNull().default(0),
   failure: jsonb("failure"),

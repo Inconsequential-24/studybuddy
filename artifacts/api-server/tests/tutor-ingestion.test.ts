@@ -71,6 +71,34 @@ test("persistent ingestion: crash recovery, bounded retries, deletion, citations
       assert.ok(current.room.concepts.every((c) => validateReferences(c.refs, current.pages)));
     });
 
+    await t.test("persist the active review stage while a page is being analyzed", async () => {
+      const room = fixture(1);
+      ids.push(room.id);
+      await create(room);
+      let finishAnalysis!: () => void;
+      let reportStage!: () => void;
+      const analysisPaused = new Promise<void>((resolve) => { finishAnalysis = resolve; });
+      const stageWasReported = new Promise<void>((resolve) => { reportStage = resolve; });
+      const worker = runIngestionPass(async (job, _room, _signal, _canContinue, onStage) => {
+        await onStage("mapping-page");
+        reportStage();
+        await analysisPaused;
+        return success(job);
+      }, room.id);
+      try {
+        await stageWasReported;
+        const [job] = await db.select().from(tutorPageJobs).where(eq(tutorPageJobs.classroomId, room.id));
+        assert.equal(job.status, "processing");
+        assert.equal(job.stage, "mapping-page");
+      } finally {
+        finishAnalysis();
+        await worker;
+      }
+      const [finishedJob] = await db.select().from(tutorPageJobs).where(eq(tutorPageJobs.classroomId, room.id));
+      assert.equal(finishedJob.status, "succeeded");
+      assert.equal(finishedJob.stage, null);
+    });
+
     await t.test("three attempts, explicit retry of only failed pages, stable source map", async () => {
       const room = fixture();
       ids.push(room.id);
